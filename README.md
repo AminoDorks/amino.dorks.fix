@@ -1,6 +1,6 @@
 # amino.dorks.fix
 
-**amino.dorks.fix** — an updated and maintained library for working with the Amino API. Based on the old `aminofix`, but with fixes and improvements for modern use.
+**amino.dorks.fix** — a fixed version of the old aminofix library, restored to work properly with the Amino API.
 
 📢 Telegram: [@aminodorks](https://t.me/aminodorks)
 
