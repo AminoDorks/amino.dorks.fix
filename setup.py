@@ -17,7 +17,7 @@ setup(
     name="amino.dorks.fix",
     license="MIT",
     author="misterio",
-    version="2.3.6.1",
+    version="2.3.6.2",
     author_email="misterio1234321@gmail.com",
     description="Library for Amino. Telegram - https://t.me/aminodorks",
     url="https://github.com/misterio060/amino.dorks.fix",
