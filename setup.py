@@ -20,7 +20,7 @@ setup(
     version="2.3.6.1",
     author_email="misterio1234321@gmail.com",
     description="Library for Amino. Telegram - https://t.me/aminodorks",
-    url="https://github.com/Minori100/Amino.fix",
+    url="https://github.com/misterio060/amino.dorks.fix",
     packages=find_packages(),
     long_description=long_description,
     install_requires=requirements,
@@ -28,13 +28,14 @@ setup(
         'aminoapps',
         'amino.fix',
         'amino',
+        'aminodorks',
         'amino-bot',
         'narvii',
         'api',
         'python',
         'python3',
         'python3.x',
-        'minori'
+        'misterio060'
     ],
     python_requires='>=3.6',
 )
