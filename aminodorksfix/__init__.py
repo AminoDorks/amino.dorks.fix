@@ -2,7 +2,7 @@ __title__ = 'amino.dorks.fix'
 __author__ = 'misterio060'
 __license__ = 'MIT'
 __copyright__ = 'Copyright 2025 misterio060'
-__version__ = '3.3.6.2'
+__version__ = '3.3.6.3'
 
 from .acm import ACM
 from .client import Client

@@ -1,4 +1,4 @@
-from aminofix.lib.util import signature, new_sig, new_sig_a
+from aminodorksfix.lib.util import signature, new_sig, new_sig_a
 
 from uuid import uuid4
 from aiohttp import ClientSession
