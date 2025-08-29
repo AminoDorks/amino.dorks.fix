@@ -1,3 +1,9 @@
 # amino.dorks.fix
+
+**Установка:**
+
+```bash
 pip install amino.dorks.fix
-telegram - t.me/aminodorks
+
+Telegram для поддержки и новостей:
+t.me/aminodorks
