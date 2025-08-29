@@ -10,19 +10,19 @@ requirements = [
     "websockets"
 ]
 
-with open("README.md", "r") as stream:
+with open("README.md", "r", encoding="utf-8") as stream:
     long_description = stream.read()
 
 setup(
     name="amino.dorks.fix",
-    license="MIT",
+    version="3.3.6.2",
     author="misterio",
-    version="2.3.6.3",
     author_email="misterio1234321@gmail.com",
     description="Library for Amino. Telegram - https://t.me/aminodorks",
+    long_description=long_description,
+    long_description_content_type="text/markdown",  # важно для PyPI
     url="https://github.com/misterio060/amino.dorks.fix",
     packages=find_packages(),
-    long_description=long_description,
     install_requires=requirements,
     keywords=[
         'aminoapps',
@@ -38,4 +38,5 @@ setup(
         'misterio060'
     ],
     python_requires='>=3.6',
+    license="MIT",
 )
