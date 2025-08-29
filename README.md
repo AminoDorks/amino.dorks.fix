@@ -1,6 +1,6 @@
-# 🐷 amino.dorks.fix
+# amino.dorks.fix
 
-**amino.dorks.fix** — a fixed version of the old `aminofix` library, restored to work properly with the Amino API. It works on [DorksApi](https://github.com/thatcelt/dorks_api).
+**amino.dorks.fix** — a fixed version of the old `aminofix` library, restored to work properly with the Amino API. It works on **`[DorksApi](https://github.com/thatcelt/dorks_api)`**.
 
 📢 Telegram: [@aminodorks](https://t.me/aminodorks)
 
