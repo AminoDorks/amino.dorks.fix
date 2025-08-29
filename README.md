@@ -1,4 +1,4 @@
-# 🐷 amino.dorks.fix
+# amino.dorks.fix
 
 **amino.dorks.fix** — an updated and maintained library for working with the Amino API. Based on the old `aminofix`, but with fixes and improvements for modern use.
 
