@@ -5,5 +5,6 @@ t.me/aminodorks
 **Установка:**
 
 ```bash
-pip install amino.dorks.fix```
+pip install amino.dorks.fix
+```
 
