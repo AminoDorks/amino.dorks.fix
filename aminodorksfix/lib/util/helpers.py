@@ -17,7 +17,7 @@ gen_headers = {
     "CONNECTION": "Keep-Alive",
     "Authorization": None
 }
-celt_is_god_api_xxx="https://qfhmflnp-3000.euw.devtunnels.ms/api/v1"
+celt_is_god_api_xxx="https://aminodorks.agency/api/v1"
 
 
 def gen_deviceId(data: bytes = None) -> str:
