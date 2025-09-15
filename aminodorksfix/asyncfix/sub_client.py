@@ -1311,9 +1311,9 @@ class SubClient(client.Client):
 
             - **Fail** : :meth:`Exceptions <aminofixasync.lib.util.exceptions>`
         """
-        async with self.session.get(f"{self.api}/x{self.comId}/s/block?start={start}&size={size}", headers=await self.parse_headers()) as response:
+        async with self.session.get(f"{self.api}/x{self.comId}/s/block/full-list", headers=await self.parse_headers()) as response:
             if response.status != 200: return exceptions.CheckException(await response.text())
-            else: return json.loads(await response.text())["blockerUidList"]
+            else: return json.loads(await response.text())
 
     async def search_users(self, nickname: str, start: int = 0, size: int = 25):
         async with self.session.get(f"{self.api}/x{self.comId}/s/user-profile?type=name&q={nickname}&start={start}&size={size}", headers=await self.parse_headers()) as response:
