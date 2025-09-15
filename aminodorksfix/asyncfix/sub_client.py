@@ -8,6 +8,7 @@ from time import timezone
 from binascii import hexlify
 from typing import BinaryIO, Union
 from time import time as timestamp
+from json_minify import json_minify
 import requests
 
 from . import client
