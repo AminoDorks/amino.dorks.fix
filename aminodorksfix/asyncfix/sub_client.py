@@ -119,13 +119,13 @@ class SubClient(client.Client):
 
         if captionList is not None:
             for image, caption in zip(imageList, captionList):
-                mediaList.append([100, self.upload_media(image, "image"), caption])
+                mediaList.append([100, await self.upload_media(image, "image"), caption])
 
         else:
             if imageList is not None:
                 for image in imageList:
-                    print(self.upload_media(image, "image"))
-                    mediaList.append([100, self.upload_media(image, "image"), None])
+                    print(await self.upload_media(image, "image"))
+                    mediaList.append([100, await self.upload_media(image, "image"), None])
 
         data = {
             "address": None,
@@ -157,7 +157,7 @@ class SubClient(client.Client):
         mediaList = []
 
         for image in imageList:
-            mediaList.append([100, self.upload_media(image, "image"), None])
+            mediaList.append([100, await self.upload_media(image, "image"), None])
 
         data = {
             "label": title,
@@ -185,7 +185,7 @@ class SubClient(client.Client):
         mediaList = []
 
         for image in imageList:
-            mediaList.append([100, self.upload_media(image, "image"), None])
+            mediaList.append([100, await self.upload_media(image, "image"), None])
 
         data = {
             "address": None,
@@ -286,18 +286,18 @@ class SubClient(client.Client):
 
         if captionList is not None:
             for image, caption in zip(imageList, captionList):
-                mediaList.append([100, self.upload_media(image, "image"), caption])
+                mediaList.append([100, await self.upload_media(image, "image"), caption])
 
         else:
             if imageList is not None:
                 for image in imageList:
-                    mediaList.append([100, self.upload_media(image, "image"), None])
+                    mediaList.append([100, await self.upload_media(image, "image"), None])
 
         if imageList is not None or captionList is not None:
             data["mediaList"] = mediaList
 
         if nickname: data["nickname"] = nickname
-        if icon: data["icon"] = self.upload_media(icon, fileType)
+        if icon: data["icon"] = await self.upload_media(icon, fileType)
         if content: data["content"] = content
 
         if chatRequestPrivilege: data["extensions"] = {"privilegeOfChatInviteRequest": chatRequestPrivilege}
@@ -921,7 +921,7 @@ class SubClient(client.Client):
                 mentions.append({"uid": mention_uid})
 
         if embedImage:
-            embedImage = [[100, self.upload_media(embedImage, "image"), None]]
+            embedImage = [[100, await self.upload_media(embedImage, "image"), None]]
 
         if linkSnippetImage:
             linkSnippetImage = base64.b64encode(linkSnippetImage.read()).decode()
@@ -1161,7 +1161,7 @@ class SubClient(client.Client):
                         res.append(response.status)
 
         if backgroundImage is not None:
-            data = json.dumps({"media": [100, self.upload_media(backgroundImage, "image"), None],
+            data = json.dumps({"media": [100, await self.upload_media(backgroundImage, "image"), None],
                                "timestamp": int(timestamp() * 1000)})
             async with self.session.post(
                     f"{self.api}/x{self.comId}/s/chat/thread/{chatId}/member/{self.profile.userId}/background",
