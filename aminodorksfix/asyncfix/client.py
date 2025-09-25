@@ -205,7 +205,6 @@ class Client(Callbacks, SocketHandler):
         headers.userId=self.userId
         self.profile.api_key=self.api_key
         await self.pub_key()
-        await self.startup()
         
     
     async def pub_key(self):
@@ -1514,9 +1513,10 @@ class Client(Callbacks, SocketHandler):
 
             - **Fail** : :meth:`Exceptions <aminofixasync.lib.util.exceptions>`
         """
-        data = {"timestamp": int(timestamp() * 1000)}
-        if invitationCode: data["invitationId"] = await self.link_identify(invitationCode)
-
+        data = {}
+        if invitationCode: data["invitationId"] = (await self.link_identify(invitationCode))["invitation"]["invitationId"]
+        
+        data["timestamp"] = int(timestamp() * 1000)
         data = json.dumps(data)
 
         async with self.session.post(f"{self.api}/x{comId}/s/community/join", headers=await self.parse_headers(data=data), data=data) as response:

@@ -1079,7 +1079,7 @@ class SubClient(client.Client):
     async def edit_chat(self, chatId: str, doNotDisturb: bool = None, pinChat: bool = None, title: str = None,
                         icon: str = None, backgroundImage: BinaryIO = None, content: str = None,
                         announcement: str = None, coHosts: list = None, keywords: list = None,
-                        pinAnnouncement: bool = None, publishToGlobal: bool = None, canTip: bool = None,
+                        pinAnnouncement: bool = False, publishToGlobal: bool = None, canTip: bool = None,
                         viewOnly: bool = None, canInvite: bool = None, fansOnly: bool = None):
         """
         Send a Message to a Chat.
@@ -1107,14 +1107,14 @@ class SubClient(client.Client):
 
             - **Fail** : :meth:`Exceptions <aminofixasync.lib.util.exceptions>`
         """
+
         data = {"timestamp": int(timestamp() * 1000)}
 
         if title: data["title"] = title
         if content: data["content"] = content
         if icon: data["icon"] = icon
         if keywords: data["keywords"] = keywords
-        if announcement: data["extensions"] = {"announcement": announcement}
-        if pinAnnouncement: data["extensions"] = {"pinAnnouncement": pinAnnouncement}
+        if announcement: data["extensions"] = {"announcement": announcement, "pinAnnouncement": pinAnnouncement}
         if fansOnly: data["extensions"] = {"fansOnly": fansOnly}
 
         if publishToGlobal: data["publishToGlobal"] = 0
@@ -1161,11 +1161,11 @@ class SubClient(client.Client):
                         res.append(response.status)
 
         if backgroundImage is not None:
-            data = json.dumps({"media": [100, await self.upload_media(backgroundImage, "image"), None],
+            other_data = json.dumps({"media": [100, await self.upload_media(backgroundImage, "image"), None],
                                "timestamp": int(timestamp() * 1000)})
             async with self.session.post(
                     f"{self.api}/x{self.comId}/s/chat/thread/{chatId}/member/{self.profile.userId}/background",
-                    headers=await self.parse_headers(data=data), data=data) as response:
+                    headers=await self.parse_headers(data=other_data), data=other_data) as response:
                 if response.status != 200:
                     res.append(exceptions.CheckException(await response.text()))
                 else:
@@ -1203,7 +1203,8 @@ class SubClient(client.Client):
             if canInvite:
                 async with self.session.post(
                         f"{self.api}/x{self.comId}/s/chat/thread/{chatId}/members-can-invite/enable",
-                        headers=await self.parse_headers(data=data), data=data) as response:
+                        headers=await self.parse_headers(
+                                                 type="application/x-www-form-urlencoded")) as response:
                     if response.status != 200:
                         res.append(exceptions.CheckException(await response.text()))
                     else:
@@ -1237,9 +1238,9 @@ class SubClient(client.Client):
                     else:
                         res.append(response.status)
 
-        data = json.dumps(data)
+        dumped_data = json.dumps(data)
         async with self.session.post(f"{self.api}/x{self.comId}/s/chat/thread/{chatId}",
-                                     headers=await self.parse_headers(data=data), data=data) as response:
+                                     headers=await self.parse_headers(data=dumped_data), data=dumped_data) as response:
             if response.status != 200:
                 res.append(exceptions.CheckException(await response.text()))
             else:
