@@ -1676,7 +1676,9 @@ class Client(Callbacks, SocketHandler):
 
             - **Fail** : :meth:`Exceptions <aminofix.lib.util.exceptions>`
         """
-        response = self.session.post(f"{self.api}/x{comId}/s/community/leave", headers=self.parse_headers(), proxies=self.proxies, verify=self.certificatePath)
+        headers = self.parse_headers()
+        headers['contentType'] = 'application/x-www-form-urlencoded'
+        response = self.session.post(f"{self.api}/x{comId}/s/community/leave", headers=headers, proxies=self.proxies, verify=self.certificatePath)
         if response.status_code != 200: 
             return exceptions.CheckException(response.text)
         else:
