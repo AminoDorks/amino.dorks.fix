@@ -3,3 +3,4 @@
 /amino.dorks.fix.egg-info/
 /.github/
 /build/
+__pycache__/

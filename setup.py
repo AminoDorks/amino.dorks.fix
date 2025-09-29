@@ -1,10 +1,13 @@
-from setuptools import setup, find_packages
+from setuptools import (
+    setup,
+    find_packages
+)
 
 requirements = [
     "requests",
-    "websocket-client==1.3.1", 
-    "setuptools", 
-    "json_minify", 
+    "websocket-client==1.3.1",
+    "setuptools",
+    "json_minify",
     "six",
     "aiohttp",
     "websockets"
@@ -15,7 +18,7 @@ with open("README.md", "r", encoding="utf-8") as stream:
 
 setup(
     name="amino.dorks.fix",
-    version="3.7.5.6",
+    version="3.7.6.6",
     author="misterio",
     author_email="misterio1234321@gmail.com",
     description="Library for Amino. Telegram - https://t.me/aminodorks",

@@ -1,7 +1,6 @@
 import time
 import json
 import websocket
-import contextlib
 
 from threading import Thread
 from sys import _getframe as getframe
@@ -9,8 +8,14 @@ from sys import _getframe as getframe
 from .lib.util.helpers import gen_deviceId
 from .lib.util import objects, helpers
 
+
 class SocketHandler:
-    def __init__(self, client, socket_trace = False, debug = False):
+    def __init__(
+            self,
+            client,
+            socket_trace: bool = False,
+            debug: bool = False
+    ):
         self.socket_url = "wss://ws1.aminoapps.com"
         self.client = client
         self.debug = debug
@@ -28,14 +33,12 @@ class SocketHandler:
         websocket.enableTrace(socket_trace)
 
     def reconnect_handler(self):
-        # Made by enchart#3410 thx
-        # Fixed by The_Phoenix#3967
         while True:
             time.sleep(self.reconnectTime)
 
             if self.active:
                 if self.debug is True:
-                    print(f"[socket][reconnect_handler] Reconnecting Socket")
+                    print("[socket][reconnect_handler] Reconnecting Socket")
 
                 self.close()
                 self.run_amino_socket()
@@ -47,7 +50,7 @@ class SocketHandler:
     def send(self, data):
         if self.debug is True:
             print(f"[socket][send] Sending Data : {data}")
-        
+
         if not self.socket_thread:
             self.run_amino_socket()
             time.sleep(5)
@@ -57,7 +60,7 @@ class SocketHandler:
     def run_amino_socket(self):
         try:
             if self.debug is True:
-                print(f"[socket][start] Starting Socket")
+                print("[socket][start] Starting Socket")
 
             if self.client.sid is None:
                 return
@@ -71,9 +74,9 @@ class SocketHandler:
             }
 
             self.socket = websocket.WebSocketApp(
-                f"{self.socket_url}/?signbody={final.replace('|', '%7C')}",
-                on_message = self.handle_message,
-                header = self.headers
+                url=f"{self.socket_url}/?signbody={final.replace('|', '%7C')}",
+                on_message=self.handle_message,
+                header=self.headers
             )
 
             self.active = True
@@ -83,15 +86,15 @@ class SocketHandler:
             if self.reconnect_thread is None:
                 self.reconnect_thread = Thread(target=self.reconnect_handler)
                 self.reconnect_thread.start()
-            
+
             if self.debug is True:
-                print(f"[socket][start] Socket Started")
+                print("[socket][start] Socket Started")
         except Exception as e:
             print(e)
 
     def close(self):
         if self.debug is True:
-            print(f"[socket][close] Closing Socket")
+            print("[socket][close] Closing Socket")
 
         self.active = False
         try:
@@ -101,6 +104,7 @@ class SocketHandler:
                 print(f"[socket][close] Error while closing Socket : {closeError}")
 
         return
+
 
 class Callbacks:
     def __init__(self, client):

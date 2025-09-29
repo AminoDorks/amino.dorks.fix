@@ -3,10 +3,11 @@ from time import time as timestamp
 from typing import BinaryIO
 
 from . import client
-from .lib.util import exceptions, headers, objects, signature
+from .lib.util import exceptions, headers, objects
 
 device = client.Client().device_id
 headers.sid = client.Client().sid
+
 
 class ACM(client.Client):
     def __init__(self, profile: objects.UserProfile, comId: str = None):

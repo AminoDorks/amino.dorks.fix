@@ -10,8 +10,7 @@ from time import time as timestamp
 from json_minify import json_minify
 
 from . import client
-from .lib.util import exceptions, headers, objects, signature, helpers
-from .lib.util.helpers import gen_deviceId
+from .lib.util import exceptions, headers, objects, helpers
 
 device = client.Client().device_id
 headers.sid = client.Client().sid
@@ -22,14 +21,15 @@ class VCHeaders:
         vc_headers = {
             "Accept-Language": "en-US",
             "Content-Type": "application/json",
-            "User-Agent": "Amino/45725 CFNetwork/1126 Darwin/19.5.0",  # Closest server (this one for me)
+            "User-Agent": "Amino/45725 CFNetwork/1126 Darwin/19.5.0",
             "Host": "rt.applovin.com",
             "Accept-Encoding": "gzip, deflate, br",
             "Connection": "Keep-Alive",
             "Accept": "*/*"
         }
 
-        if data: vc_headers["Content-Length"] = str(len(data))
+        if data:
+            vc_headers["Content-Length"] = str(len(data))
         self.vc_headers = vc_headers
 
 

@@ -5,43 +5,76 @@ import asyncio
 import threading
 
 from uuid import uuid4
-from time import timezone, sleep
-from typing import BinaryIO, Union
 from time import time as timestamp
 from locale import getdefaultlocale as locale
 
-from ..lib.util import exceptions, headers, objects, helpers, signature
 from ..lib.util.helpers import gen_deviceId
-from .socket import Callbacks, SocketHandler
 
-#@dorthegra/IDörthe#8835 thanks for support!
+from time import (
+    timezone,
+    sleep
+)
+from typing import (
+    BinaryIO,
+    Union
+)
+
+from ..lib.util import (
+    exceptions,
+    headers,
+    objects,
+    helpers
+)
+from .socket import (
+    Callbacks,
+    SocketHandler
+)
+
 
 class Client(Callbacks, SocketHandler):
-    def __init__(self, api_key=None, deviceId: str = None, userAgent: str = "Dalvik/2.1.0 (Linux; U; Android 10; M2006C3MNG Build/QP1A.190711.020;com.narvii.amino.master/4.3.3121)", socket_trace = False, socketDebugging = False, socket_enabled = True, autoDevice = False, sub: bool = False):
+    def __init__(
+            self,
+            api_key=None,
+            deviceId: str = None,
+            userAgent: str = (
+                "Dalvik/2.1.0 (Linux; U; Android 10; M2006C3MNG Build" +
+                "/QP1A.190711.020;com.narvii.amino.master/4.3.3121)"
+            ),
+            socket_trace: bool = False,
+            socketDebugging: bool = False,
+            socket_enabled: bool = True,
+            autoDevice: bool = False,
+            sub: bool = False
+    ):
         self.api = "https://service.aminoapps.com/api/v1"
         self.authenticated = False
         self.configured = False
-        self.api_key=api_key
+        self.api_key = api_key
         self.socket_enabled = socket_enabled
         self.autoDevice = autoDevice
-        helpers.gen_headers["Authorization"]=api_key
+        helpers.gen_headers["Authorization"] = api_key
         if sub:
-            if deviceId: 
+            if deviceId:
                 self.device_id = deviceId
                 headers.device_id = deviceId
             else:
                 self.device_id = headers.device_id
         else:
-            if deviceId: 
+            if deviceId:
                 self.device_id = deviceId
                 headers.device_id = deviceId
-            else: 
+            else:
                 self.device_id = gen_deviceId()
                 headers.device_id = self.device_id
 
         headers.user_agent = userAgent
 
-        SocketHandler.__init__(self, self, socket_trace=socket_trace, debug=socketDebugging)
+        SocketHandler.__init__(
+            self,
+            client=self,
+            socket_trace=socket_trace,
+            debug=socketDebugging
+        )
         Callbacks.__init__(self, self)
 
         self.tapjoy_headers = headers.Tapjoy().headers
@@ -53,7 +86,7 @@ class Client(Callbacks, SocketHandler):
         self.profile: objects.UserProfile = objects.UserProfile(None)
         self.secret = None
         self.session = aiohttp.ClientSession()
-    
+
     def __del__(self):
         try:
             loop = asyncio.get_event_loop()
@@ -63,15 +96,23 @@ class Client(Callbacks, SocketHandler):
             loop.run_until_complete(self._close_session())
 
     async def _close_session(self):
-        if not self.session.closed: await self.session.close()
+        if not self.session.closed:
+            await self.session.close()
 
     async def parse_headers(self, data: str = None, type: str = None):
-        header=headers.ApisHeaders(deviceId=gen_deviceId() if self.autoDevice else self.device_id, data=data, type=type)
+        header = headers.ApisHeaders(deviceId=gen_deviceId(
+
+        ) if self.autoDevice else self.device_id, data=data, type=type)
         if data:
             await header.async_h(self.session)
         return header.headers
 
-    async def join_voice_chat(self, comId: str, chatId: str, joinType: int = 1):
+    async def join_voice_chat(
+            self,
+            comId: str,
+            chatId: str,
+            joinType: int = 1
+    ):
         """
         Joins a Voice Chat
 
@@ -80,21 +121,24 @@ class Client(Callbacks, SocketHandler):
             - **chatId** : ID of the Chat
         """
 
-        # Made by Light, Ley and Phoenix
-
         data = {
             "o": {
                 "ndcId": int(comId),
                 "threadId": chatId,
                 "joinRole": joinType,
-                "id": "2154531"  # Need to change?
+                "id": "2154531"
             },
             "t": 112
         }
         data = json.dumps(data)
         await self.send(data)
 
-    async def join_video_chat(self, comId: str, chatId: str, joinType: int = 1):
+    async def join_video_chat(
+            self,
+            comId: str,
+            chatId: str,
+            joinType: int = 1
+    ):
         """
         Joins a Video Chat
 
@@ -103,15 +147,13 @@ class Client(Callbacks, SocketHandler):
             - **chatId** : ID of the Chat
         """
 
-        # Made by Light, Ley and Phoenix
-
         data = {
             "o": {
                 "ndcId": int(comId),
                 "threadId": chatId,
                 "joinRole": joinType,
                 "channelType": 5,
-                "id": "2154531"  # Need to change?
+                "id": "2154531"
             },
             "t": 108
         }
@@ -139,7 +181,7 @@ class Client(Callbacks, SocketHandler):
                     "ndcId": comId,
                     "threadId": chatId,
                     "joinRole": joinType,
-                    "id": "2154531"  # Need to change?
+                    "id": "2154531"
                 },
                 "t": 112
             }
@@ -153,7 +195,7 @@ class Client(Callbacks, SocketHandler):
                 "ndcId": comId,
                 "threadId": chatId,
                 "joinRole": joinType,
-                "id": "2154531"  # Need to change?
+                "id": "2154531"
             },
             "t": 112
         }
@@ -164,7 +206,7 @@ class Client(Callbacks, SocketHandler):
                 "ndcId": comId,
                 "threadId": chatId,
                 "channelType": 1,
-                "id": "2154531"  # Need to change?
+                "id": "2154531"
             },
             "t": 108
         }
@@ -180,7 +222,7 @@ class Client(Callbacks, SocketHandler):
                 "ndcId": comId,
                 "threadId": chatId,
                 "joinRole": joinType,
-                "id": "2154531"  # Need to change?
+                "id": "2154531"
             },
             "t": 112
         }
@@ -200,20 +242,25 @@ class Client(Callbacks, SocketHandler):
         self.userId = uId
         self.account: objects.UserProfile = await self.get_user_info(uId)
         self.profile: objects.UserProfile = await self.get_user_info(uId)
-        self.profile.api_key=self.api_key
+        self.profile.api_key = self.api_key
         headers.sid = self.sid
-        headers.userId=self.userId
-        self.profile.api_key=self.api_key
+        headers.userId = self.userId
+        self.profile.api_key = self.api_key
         await self.pub_key()
-        
-    
+
     async def pub_key(self):
-        data=json.dumps(await helpers.get_certs_a(self.session,self.userId))
-        async with self.session.post(f"{self.api}/g/s/security/public_key", headers=await self.parse_headers(data=data), data=data) as response:
-            if response.status != 200: exceptions.CheckException(await response.text())
+        data = json.dumps(await helpers.get_certs_a(
+            self.session,
+            self.userId
+        ))
+        async with self.session.post(
+            url=f"{self.api}/g/s/security/public_key",
+            headers=await self.parse_headers(data=data), data=data
+        ) as response:
+            if response.status != 200:
+                exceptions.CheckException(await response.text())
             return 200
-    
-    
+
     async def login(self, email: str, password: str):
         """
         Login into an account.
@@ -237,20 +284,28 @@ class Client(Callbacks, SocketHandler):
             "timestamp": int(timestamp() * 1000)
         })
 
-        async with self.session.post(f"{self.api}/g/s/auth/login", headers=await self.parse_headers(data=data), data=data) as response:
-            if response.status != 200: return exceptions.CheckException(await response.text())
+        async with self.session.post(
+            url=f"{self.api}/g/s/auth/login",
+            headers=await self.parse_headers(data=data), data=data
+        ) as response:
+            if response.status != 200:
+                return exceptions.CheckException(await response.text())
             else:
                 self.authenticated = True
                 self.json = json.loads(await response.text())
                 self.sid = self.json["sid"]
                 self.userId = self.json["account"]["uid"]
-                self.account: objects.UserProfile = objects.UserProfile(self.json["account"]).UserProfile
-                self.profile: objects.UserProfile = objects.UserProfile(self.json["userProfile"]).UserProfile
-                self.profile.api_key=self.api_key
+                self.account: objects.UserProfile = objects.UserProfile(
+                    self.json["account"]
+                ).UserProfile
+                self.profile: objects.UserProfile = objects.UserProfile(
+                    self.json["userProfile"]
+                ).UserProfile
+                self.profile.api_key = self.api_key
                 self.secret = self.json["secret"]
                 headers.sid = self.sid
-                headers.userId=self.userId
-                
+                headers.userId = self.userId
+
                 await self.pub_key()
                 if self.socket_enabled:
                     await self.run_amino_socket()
@@ -279,19 +334,27 @@ class Client(Callbacks, SocketHandler):
             "timestamp": int(timestamp() * 1000)
         })
 
-        async with self.session.post(f"{self.api}/g/s/auth/login", headers=await self.parse_headers(data=data), data=data) as response:
-            if response.status != 200: return exceptions.CheckException(await response.text())
+        async with self.session.post(
+            url=f"{self.api}/g/s/auth/login",
+            headers=await self.parse_headers(data=data), data=data
+        ) as response:
+            if response.status != 200:
+                return exceptions.CheckException(await response.text())
             else:
                 self.authenticated = True
                 self.json = json.loads(await response.text())
                 self.sid = self.json["sid"]
                 self.userId = self.json["account"]["uid"]
-                self.account: objects.UserProfile = objects.UserProfile(self.json["account"]).UserProfile
-                self.profile: objects.UserProfile = objects.UserProfile(self.json["userProfile"]).UserProfile
-                self.profile.api_key=self.api_key
+                self.account: objects.UserProfile = objects.UserProfile(
+                    self.json["account"]
+                ).UserProfile
+                self.profile: objects.UserProfile = objects.UserProfile(
+                    self.json["userProfile"]
+                ).UserProfile
+                self.profile.api_key = self.api_key
                 self.secret = self.json["secret"]
                 headers.sid = self.sid
-                headers.userId=self.userId
+                headers.userId = self.userId
                 await self.pub_key()
                 if self.socket_enabled:
                     self.run_amino_socket()
@@ -318,24 +381,39 @@ class Client(Callbacks, SocketHandler):
             "timestamp": int(timestamp() * 1000)
         })
 
-        async with self.session.post(f"{self.api}/g/s/auth/login", headers=await self.parse_headers(data=data), data=data) as response:
-            if response.status != 200: return exceptions.CheckException(await response.text())
+        async with self.session.post(
+            url=f"{self.api}/g/s/auth/login",
+            headers=await self.parse_headers(data=data), data=data
+        ) as response:
+            if response.status != 200:
+                return exceptions.CheckException(await response.text())
             else:
                 self.authenticated = True
                 self.json = json.loads(await response.text())
                 self.sid = self.json["sid"]
                 self.userId = self.json["account"]["uid"]
-                self.account: objects.UserProfile = objects.UserProfile(self.json["account"]).UserProfile
-                self.profile: objects.UserProfile = objects.UserProfile(self.json["userProfile"]).UserProfile
-                self.profile.api_key=self.api_key
+                self.account: objects.UserProfile = objects.UserProfile(
+                    self.json["account"]
+                ).UserProfile
+                self.profile: objects.UserProfile = objects.UserProfile(
+                    self.json["userProfile"]
+                ).UserProfile
+                self.profile.api_key = self.api_key
                 headers.sid = self.sid
-                headers.userId=self.userId
+                headers.userId = self.userId
                 await self.pub_key()
                 if self.socket_enabled:
                     self.run_amino_socket()
                 return json.loads(await response.text())
 
-    async def register(self, nickname: str, email: str, password: str, verificationCode: str, deviceId: str = None):
+    async def register(
+            self,
+            nickname: str,
+            email: str,
+            password: str,
+            verificationCode: str,
+            deviceId: str = None
+    ):
         """
         Register an account.
 
@@ -352,7 +430,8 @@ class Client(Callbacks, SocketHandler):
             - **Fail** : :meth:`Exceptions <aminofixasync.lib.util.exceptions>`
         """
 
-        if deviceId == None: deviceId = self.device_id
+        if not deviceId:
+            deviceId = self.device_id
 
         data = json.dumps({
             "secret": f"0 {password}",
@@ -376,9 +455,14 @@ class Client(Callbacks, SocketHandler):
             "timestamp": int(timestamp() * 1000)
         })
 
-        async with self.session.post(f"{self.api}/g/s/auth/register", headers=await self.parse_headers(data=data), data=data) as response:
-            if response.status != 200: return exceptions.CheckException(await response.text())
-            else: return response.status
+        async with self.session.post(
+            url=f"{self.api}/g/s/auth/register",
+            headers=await self.parse_headers(data=data), data=data
+        ) as response:
+            if response.status != 200:
+                return exceptions.CheckException(await response.text())
+            else:
+                return response.status
 
     async def restore(self, email: str, password: str):
         """
@@ -1554,9 +1638,11 @@ class Client(Callbacks, SocketHandler):
 
             - **Fail** : :meth:`Exceptions <aminofixasync.lib.util.exceptions>`
         """
-        async with self.session.post(f"{self.api}/x{comId}/s/community/leave", headers=await self.parse_headers()) as response:
-            if response.status != 200: return exceptions.CheckException(await response.text())
-            else: return response.status
+        async with self.session.post(f"{self.api}/x{comId}/s/community/leave", headers=await self.parse_headers(type="application/x-www-form-urlencoded")) as response:
+            if response.status != 200:
+                return exceptions.CheckException(await response.text())
+            else:
+                return response.status
 
     async def flag_community(self, comId: str, reason: str, flagType: int, isGuest: bool = False):
         """
