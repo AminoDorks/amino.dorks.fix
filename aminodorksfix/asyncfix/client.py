@@ -230,7 +230,7 @@ class Client(Callbacks, SocketHandler):
         data = json.dumps(data)
         await self.send(data)
 
-    def verify_yourself(self, email: str, password: str) -> int:
+    async def verify_yourself(self, email: str, password: str) -> int:
         """
         Verify yourself
 

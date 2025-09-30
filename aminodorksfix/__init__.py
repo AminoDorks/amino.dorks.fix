@@ -2,7 +2,7 @@ __title__ = 'amino.dorks.fix'
 __author__ = 'misterio060'
 __license__ = 'MIT'
 __copyright__ = 'Copyright 2025 misterio060'
-__version__ = '3.8.7.6'
+__version__ = '3.8.7.7'
 
 __all__ = [
     "ACM",
