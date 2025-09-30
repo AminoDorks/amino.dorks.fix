@@ -371,6 +371,48 @@ class Client(Callbacks, SocketHandler):
         if self._socket_enabled:
             self.run_amino_socket()
 
+    def verify_yourself(self, email: str, password: str) -> int:
+        """
+        Verify yourself
+
+        **Parameters**
+            - **email** : Email of the account.
+            - **password** : Password of the account.
+
+        **Returns**
+            - **Success** : 200 (int)
+
+        **Description**
+            This function will verify your ip of this account
+            and return the status code of the response.
+
+        **Example**
+            >>> client = Client()
+            >>> client.verify_yourself("example@example.com", "password")
+            200
+        """
+        data = dumps({
+            "email": email,
+            "v": 2,
+            "secret": f"0 {password}",
+            "deviceID": self.__device_id,
+            "clientType": 300,
+            "action": "normal",
+            "timestamp": int(timestamp() * 1000)
+        })
+        response = self.__session.post(
+            url=f"{API_URL}/g/s/auth/login",
+            headers=self.__parse_headers(data=data),
+            data=data,
+            proxies=self.__proxies,
+            verify=self.__certificatePath
+        )
+
+        if response.status_code != 200:
+            CheckException(response.text)
+
+        return response.status_code
+
     def login(self, email: str, password: str) -> str:
         """
         Login into an account.

@@ -9,6 +9,7 @@ from time import time as timestamp
 from locale import getdefaultlocale as locale
 
 from ..lib.util.helpers import gen_deviceId
+from ..constants import API_URL
 
 from time import (
     timezone,
@@ -228,6 +229,44 @@ class Client(Callbacks, SocketHandler):
         }
         data = json.dumps(data)
         await self.send(data)
+
+    def verify_yourself(self, email: str, password: str) -> int:
+        """
+        Verify yourself
+
+        **Parameters**
+            - **email** : Email of the account.
+            - **password** : Password of the account.
+
+        **Returns**
+            - **Success** : 200 (int)
+
+        **Description**
+            This function will verify your ip of this account
+            and return the status code of the response.
+
+        **Example**
+            >>> await client.verify_yourself("example@example.com", "password")
+            200
+        """
+        data = json.dumps({
+            "email": email,
+            "v": 2,
+            "secret": f"0 {password}",
+            "deviceID": self.__device_id,
+            "clientType": 300,
+            "action": "normal",
+            "timestamp": int(timestamp() * 1000)
+        })
+        async with self.session.post(
+            url=f"{API_URL}/g/s/auth/login",
+            headers=self.__parse_headers(data=data),
+            data=data
+        ) as response:
+            if response.status != 200:
+                exceptions.CheckException(response.text)
+
+            return response.status
 
     async def login_sid(self, SID: str):
         """
