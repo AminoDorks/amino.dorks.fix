@@ -2,7 +2,7 @@ __title__ = 'amino.dorks.fix'
 __author__ = 'misterio060'
 __license__ = 'MIT'
 __copyright__ = 'Copyright 2025 misterio060'
-__version__ = '3.7.6.6'
+__version__ = '3.7.7.6'
 
 __all__ = [
     "ACM",
@@ -34,5 +34,8 @@ __newest__ = loads(get(
 ).text)["info"]["version"]
 
 if __version__ != __newest__:
-    print(f"New version of {__title__} available: {__newest__} (Using {__version__})")
+    print(
+        f"New version of {__title__}" +
+        f"available: {__newest__} (Using {__version__})"
+    )
     print("Visit our Telegram channel - https://t.me/aminodorks")

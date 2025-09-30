@@ -17,7 +17,7 @@ gen_headers = {
     "CONNECTION": "Keep-Alive",
     "Authorization": None
 }
-celt_is_god_api_xxx="https://aminodorks.agency/api/v1"
+gen_api_url = "https://aminodorks.agency/api/v1"
 
 
 def gen_deviceId(data: bytes = None) -> str:
@@ -29,15 +29,15 @@ def gen_deviceId(data: bytes = None) -> str:
 def signature(data: Union[str, bytes]) -> str:
     data = data if isinstance(data, bytes) else data.encode("utf-8")
     return b64encode(PREFIX + new(SIG_KEY, data, sha1).digest()).decode("utf-8")
-#
-def get_certs(session: Session, userId: str):
-    response=session.get(f"{celt_is_god_api_xxx}/signature/credentials/{userId}",headers=gen_headers)
-    if response.status_code !=200:
+
+def get_credentials(session: Session, userId: str):
+    response = session.get(f"{gen_api_url}/signature/credentials/{userId}", headers=gen_headers)
+    if response.status_code != 200:
         raise Exception(response.text)
     return response.json()["credentials"]
 
 async def get_certs_a(session: ClientSession, userId: str):
-    async with session.get(f"{celt_is_god_api_xxx}/signature/credentials/{userId}",headers=gen_headers) as response:
+    async with session.get(f"{gen_api_url}/signature/credentials/{userId}",headers=gen_headers) as response:
         if response.status !=200:
             raise Exception(await response.text())
         return (await response.json())["credentials"]
@@ -47,7 +47,7 @@ def new_sig(session: Session, data: str, userId: str):
         "payload":data,
         "userId":userId
     })
-    response=session.post(f"{celt_is_god_api_xxx}/signature/ecdsa",headers=gen_headers,data=data)
+    response=session.post(f"{gen_api_url}/signature/ecdsa",headers=gen_headers,data=data)
     if response.status_code !=200:
         raise Exception(response.text)
     return response.json()["ECDSA"]
@@ -57,7 +57,7 @@ async def new_sig_a(session: ClientSession, data: str, userId: str):
         "payload":data,
         "userId":userId
     })
-    async with session.post(f"{celt_is_god_api_xxx}/signature/ecdsa",headers=gen_headers,data=data) as response:
+    async with session.post(f"{gen_api_url}/signature/ecdsa",headers=gen_headers,data=data) as response:
         if response.status !=200:
             raise Exception(await response.text())
         return (await response.json())["ECDSA"]

@@ -12,8 +12,8 @@ from json_minify import json_minify
 from . import client
 from .lib.util import exceptions, headers, objects, helpers
 
-device = client.Client().device_id
-headers.sid = client.Client().sid
+device = headers.device_id
+headers.sid = headers.sid
 
 
 class VCHeaders:

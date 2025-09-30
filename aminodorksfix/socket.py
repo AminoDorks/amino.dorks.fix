@@ -10,10 +10,12 @@ from .lib.util import objects, helpers
 
 
 class SocketHandler:
+
     def __init__(
             self,
             client,
             socket_trace: bool = False,
+            socket_enabled: bool = True,
             debug: bool = False
     ):
         self.socket_url = "wss://ws1.aminoapps.com"
@@ -26,7 +28,7 @@ class SocketHandler:
         self.reconnectTime = 180
         self.socket_thread = None
 
-        if self.socket_enabled:
+        if socket_enabled:
             self.reconnect_thread = Thread(target=self.reconnect_handler)
             self.reconnect_thread.start()
 

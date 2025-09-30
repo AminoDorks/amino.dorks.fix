@@ -1,6 +1,3 @@
-# You don't even know how long this shit took...
-# F*ck you Sand for making me do this.
-
 class Objects:
     class Users:
         team_amino = "000000000-0000-0000-0000-000000000000"
@@ -10,9 +7,11 @@ class UserProfile:
     def __init__(self, data):
         self.json = data
 
-        try: self.fanClub: FanClubList = FanClubList(data["fanClubList"]).FanClubList
-        except (KeyError, TypeError): self.fanClub: FanClubList = FanClubList([])
-
+        try:
+            self.fanClub: FanClubList = FanClubList(data["fanClubList"]).FanClubList
+        except (KeyError, TypeError):
+            self.fanClub: FanClubList = FanClubList([])
+        self.api_key: str = None # stub
         self.accountMembershipStatus = None
         self.activation = None
         self.activePublicLiveThreadId = None
