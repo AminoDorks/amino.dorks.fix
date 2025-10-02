@@ -66,14 +66,14 @@ from .lib.util.objects import (
 class Client(Callbacks, SocketHandler):
     __slots__ = (
         "__api_key",
-        "__session",
         "__device_id",
         "__proxies",
-        "__certificatePath",
+        "__certificate_path",
         "__sid",
         "__account",
         "__active_chat_loops",
         "__stop_loop",
+        "_session",
         "_socket_enabled",
         "_profile"
     )
@@ -114,11 +114,11 @@ class Client(Callbacks, SocketHandler):
             socket_enabled=kwargs.get("socket_enabled", True)
         )
         Callbacks.__init__(self, self)
-        self.__session = Session()
+        self._session = Session()
         self.__api_key = api_key
         self.__device_id = deviceId
         self.__proxies = proxies
-        self.__certificatePath = kwargs.get("certificatePath")
+        self.__certificate_path = kwargs.get("certificatePath")
         self.__active_live_chats = []
         self.__stop_loop = False
         self.__sid = None
@@ -126,7 +126,19 @@ class Client(Callbacks, SocketHandler):
         self._profile: UserProfile = UserProfile(None)
         gen_headers["Authorization"] = api_key
 
-    def __parse_headers(
+    @property
+    def profile(self) -> UserProfile:
+        return self._profile
+
+    @property
+    def device_id(self) -> str:
+        return self.__device_id
+
+    @property
+    def sid(self) -> str | None:
+        return self.__sid
+
+    def _parse_headers(
             self,
             data: str = None,
             type: str = None
@@ -145,7 +157,7 @@ class Client(Callbacks, SocketHandler):
             data=data,
             type=type
         )
-        header.generate_ecdsa_sync(self.__session)
+        header.generate_ecdsa_sync(self._session)
         print(header.headers)
 
         return header.headers
@@ -166,16 +178,16 @@ class Client(Callbacks, SocketHandler):
 
         data = dumps(
             get_credentials(
-                self.__session,
+                self._session,
                 self._profile.userId
             )
         )
-        response = self.__session.post(
+        response = self._session.post(
             url=f"{API_URL}/g/s/security/public_key",
-            headers=self.__parse_headers(data=data),
+            headers=self._parse_headers(data=data),
             data=data,
             proxies=self.__proxies,
-            verify=self.__certificatePath
+            verify=self.__certificate_path
         )
         if response.status_code != 200:
             CheckException(response.text)
@@ -400,12 +412,12 @@ class Client(Callbacks, SocketHandler):
             "action": "normal",
             "timestamp": int(timestamp() * 1000)
         })
-        response = self.__session.post(
+        response = self._session.post(
             url=f"{API_URL}/g/s/auth/login",
-            headers=self.__parse_headers(data=data),
+            headers=self._parse_headers(data=data),
             data=data,
             proxies=self.__proxies,
-            verify=self.__certificatePath
+            verify=self.__certificate_path
         )
 
         if response.status_code != 200:
@@ -424,7 +436,7 @@ class Client(Callbacks, SocketHandler):
         **Returns**
             - **Success** : 200 (int)
 
-            - **Fail** : :meth:`Exceptions <aminofix.lib.util.exceptions>`
+            - **Fail** : :meth:`Exceptions <aminodorksfix.lib.util.exceptions>`
         """
         data = dumps({
             "email": email,
@@ -435,12 +447,12 @@ class Client(Callbacks, SocketHandler):
             "action": "normal",
             "timestamp": int(timestamp() * 1000)
         })
-        response = self.__session.post(
+        response = self._session.post(
             url=f"{API_URL}/g/s/auth/login",
-            headers=self.__parse_headers(data=data),
+            headers=self._parse_headers(data=data),
             data=data,
             proxies=self.__proxies,
-            verify=self.__certificatePath
+            verify=self.__certificate_path
         )
 
         if response.status_code != 200:
@@ -473,7 +485,7 @@ class Client(Callbacks, SocketHandler):
         **Returns**
             - **Success** : 200 (int)
 
-            - **Fail** : :meth:`Exceptions <aminofix.lib.util.exceptions>`
+            - **Fail** : :meth:`Exceptions <aminodorksfix.lib.util.exceptions>`
         """
         data = dumps({
             "phoneNumber": phoneNumber,
@@ -485,12 +497,12 @@ class Client(Callbacks, SocketHandler):
             "timestamp": int(timestamp() * 1000)
         })
 
-        response = self.__session.post(
+        response = self._session.post(
             url=f"{API_URL}/g/s/auth/login",
-            headers=self.__parse_headers(data=data),
+            headers=self._parse_headers(data=data),
             data=data,
             proxies=self.__proxies,
-            verify=self.__certificatePath
+            verify=self.__certificate_path
         )
         self.run_amino_socket()
         if response.status_code != 200:
@@ -523,7 +535,7 @@ class Client(Callbacks, SocketHandler):
         **Returns**
             - **Success** : 200 (int)
 
-            - **Fail** : :meth:`Exceptions <aminofix.lib.util.exceptions>`
+            - **Fail** : :meth:`Exceptions <aminodorksfix.lib.util.exceptions>`
         """
         data = dumps({
             "secret": f"0 {password}",
@@ -532,11 +544,11 @@ class Client(Callbacks, SocketHandler):
             "timestamp": int(timestamp() * 1000)
         })
 
-        response = self.__session.post(
+        response = self._session.post(
             url=f"{API_URL}/g/s/account/delete-request/cancel",
-            headers=self.__parse_headers(data=data),
+            headers=self._parse_headers(data=data),
             data=data, proxies=self.__proxies,
-            verify=self.__certificatePath
+            verify=self.__certificate_path
         )
         if response.status_code != 200:
             return CheckException(response.text)
@@ -553,7 +565,7 @@ class Client(Callbacks, SocketHandler):
         **Returns**
             - **Success** : 200 (int)
 
-            - **Fail** : :meth:`Exceptions <aminofix.lib.util.exceptions>`
+            - **Fail** : :meth:`Exceptions <aminodorksfix.lib.util.exceptions>`
         """
         data = dumps({
             "deviceID": self.__device_id,
@@ -561,12 +573,12 @@ class Client(Callbacks, SocketHandler):
             "timestamp": int(timestamp() * 1000)
         })
 
-        response = self.__session.post(
+        response = self._session.post(
             url=f"{API_URL}/g/s/auth/logout",
-            headers=self.__parse_headers(data=data),
+            headers=self._parse_headers(data=data),
             data=data,
             proxies=self.__proxies,
-            verify=self.__certificatePath
+            verify=self.__certificate_path
         )
         if response.status_code != 200:
             return CheckException(response.text)
@@ -591,7 +603,7 @@ class Client(Callbacks, SocketHandler):
         **Returns**
             - **Success** : 200 (int)
 
-            - **Fail** : :meth:`Exceptions <aminofix.lib.util.exceptions>`
+            - **Fail** : :meth:`Exceptions <aminodorksfix.lib.util.exceptions>`
         """
         gender_from_map = GENDERS_MAP.get(gender)
 
@@ -606,12 +618,12 @@ class Client(Callbacks, SocketHandler):
             "timestamp": int(timestamp() * 1000)
         })
 
-        response = self.__session.post(
+        response = self._session.post(
             url=f"{API_URL}/g/s/persona/profile/basic",
             data=data,
-            headers=self.__parse_headers(data=data),
+            headers=self._parse_headers(data=data),
             proxies=self.__proxies,
-            verify=self.__certificatePath
+            verify=self.__certificate_path
         )
         if response.status_code != 200:
             return CheckException(response.text)
@@ -629,7 +641,7 @@ class Client(Callbacks, SocketHandler):
         **Returns**
             - **Success** : 200 (int)
 
-            - **Fail** : :meth:`Exceptions <aminofix.lib.util.exceptions>`
+            - **Fail** : :meth:`Exceptions <aminodorksfix.lib.util.exceptions>`
         """
         data = dumps({
             "validationContext": {
@@ -640,11 +652,11 @@ class Client(Callbacks, SocketHandler):
             "timestamp": int(timestamp() * 1000)
         })
 
-        response = self.__session.post(
+        response = self._session.post(
             url=f"{API_URL}/g/s/auth/check-security-validation",
-            headers=self.__parse_headers(data=data),
+            headers=self._parse_headers(data=data),
             data=data, proxies=self.__proxies,
-            verify=self.__certificatePath
+            verify=self.__certificate_path
         )
         if response.status_code != 200:
             return CheckException(response.text)
@@ -667,7 +679,7 @@ class Client(Callbacks, SocketHandler):
         **Returns**
             - **Success** : 200 (int)
 
-            - **Fail** : :meth:`Exceptions <aminofix.lib.util.exceptions>`
+            - **Fail** : :meth:`Exceptions <aminodorksfix.lib.util.exceptions>`
         """
         data = {
             "identity": email,
@@ -680,12 +692,12 @@ class Client(Callbacks, SocketHandler):
             data["purpose"] = "reset-password"
 
         data = dumps(data)
-        response = self.__session.post(
+        response = self._session.post(
             url=f"{API_URL}/g/s/auth/request-security-validation",
-            headers=self.__parse_headers(data=data),
+            headers=self._parse_headers(data=data),
             data=data,
             proxies=self.__proxies,
-            verify=self.__certificatePath,
+            verify=self.__certificate_path,
             timeout=timeout
         )
         if response.status_code != 200:
@@ -704,7 +716,7 @@ class Client(Callbacks, SocketHandler):
         **Returns**
             - **Success** : 200 (int)
 
-            - **Fail** : :meth:`Exceptions <aminofix.lib.util.exceptions>`
+            - **Fail** : :meth:`Exceptions <aminodorksfix.lib.util.exceptions>`
         """
 
         data = dumps({
@@ -714,12 +726,12 @@ class Client(Callbacks, SocketHandler):
             "deviceID": self.__device_id
         })
 
-        response = self.__session.post(
+        response = self._session.post(
             url=f"{API_URL}/g/s/auth/activate-email",
-            headers=self.__parse_headers(data=data),
+            headers=self._parse_headers(data=data),
             data=data,
             proxies=self.__proxies,
-            verify=self.__certificatePath
+            verify=self.__certificate_path
         )
         if response.status_code != 200:
             return CheckException(response.text)
@@ -736,7 +748,7 @@ class Client(Callbacks, SocketHandler):
         **Returns**
             - **Success** : 200 (int)
 
-            - **Fail** : :meth:`Exceptions <aminofix.lib.util.exceptions>`
+            - **Fail** : :meth:`Exceptions <aminodorksfix.lib.util.exceptions>`
         """
 
         data = dumps({
@@ -744,12 +756,12 @@ class Client(Callbacks, SocketHandler):
             "secret": f"0 {password}"
         })
 
-        response = self.__session.post(
+        response = self._session.post(
             url=f"{API_URL}/g/s/account/delete-request",
-            headers=self.__parse_headers(data=data),
+            headers=self._parse_headers(data=data),
             data=data,
             proxies=self.__proxies,
-            verify=self.__certificatePath
+            verify=self.__certificate_path
         )
         if response.status_code != 200:
             return CheckException(response.text)
@@ -768,7 +780,7 @@ class Client(Callbacks, SocketHandler):
         **Returns**
             - **Success** : 200 (int)
 
-            - **Fail** : :meth:`Exceptions <aminofix.lib.util.exceptions>`
+            - **Fail** : :meth:`Exceptions <aminodorksfix.lib.util.exceptions>`
         """
 
         data = dumps({
@@ -786,12 +798,12 @@ class Client(Callbacks, SocketHandler):
             "deviceID": self.__device_id
         })
 
-        response = self.__session.post(
+        response = self._session.post(
             url=f"{API_URL}/g/s/auth/reset-password",
-            headers=self.__parse_headers(data=data),
+            headers=self._parse_headers(data=data),
             data=data,
             proxies=self.__proxies,
-            verify=self.__certificatePath)
+            verify=self.__certificate_path)
         if response.status_code != 200:
             return CheckException(response.text)
 
@@ -807,7 +819,7 @@ class Client(Callbacks, SocketHandler):
         **Returns**
             - **Success** : 200 (int)
 
-            - **Fail** : :meth:`Exceptions <aminofix.lib.util.exceptions>`
+            - **Fail** : :meth:`Exceptions <aminodorksfix.lib.util.exceptions>`
         """
         data = dumps({
             "deviceID": deviceId,
@@ -819,12 +831,12 @@ class Client(Callbacks, SocketHandler):
             "timestamp": int(timestamp() * 1000)
         })
 
-        response = self.__session.post(
+        response = self._session.post(
             url=f"{API_URL}/g/s/device",
-            headers=self.__parse_headers(data=data),
+            headers=self._parse_headers(data=data),
             data=data,
             proxies=self.__proxies,
-            verify=self.__certificatePath
+            verify=self.__certificate_path
         )
         if response.status_code != 200:
             return CheckException(response.text)
@@ -837,15 +849,15 @@ class Client(Callbacks, SocketHandler):
 
         **Returns**
             - **Success** : :meth:`UserProfile Object
-                            <aminofix.lib.util.objects.UserProfile>`
+                            <aminodorksfix.lib.util.objects.UserProfile>`
 
-            - **Fail** : :meth:`Exceptions <aminofix.lib.util.exceptions>`
+            - **Fail** : :meth:`Exceptions <aminodorksfix.lib.util.exceptions>`
         """
-        response = self.__session.get(
+        response = self._session.get(
             url=f"{API_URL}/g/s/account",
-            headers=self.__parse_headers(),
+            headers=self._parse_headers(),
             proxies=self.__proxies,
-            verify=self.__certificatePath
+            verify=self.__certificate_path
         )
         if response.status_code != 200:
             return CheckException(response.text)
@@ -862,7 +874,7 @@ class Client(Callbacks, SocketHandler):
         **Returns**
             - **Success** : Url of the file uploaded to the server.
 
-            - **Fail** : :meth:`Exceptions <aminofix.lib.util.exceptions>`
+            - **Fail** : :meth:`Exceptions <aminodorksfix.lib.util.exceptions>`
         """
         type_from_map = MEDIA_TYPES_MAP.get(fileType)
         if not type_from_map:
@@ -870,7 +882,7 @@ class Client(Callbacks, SocketHandler):
 
         data = file.read()
 
-        response = self.__session.post(
+        response = self._session.post(
             url=f"{API_URL}/g/s/media/upload",
             data=data,
             headers=headers.ApisHeaders(
@@ -879,7 +891,7 @@ class Client(Callbacks, SocketHandler):
                 deviceId=self.__device_id
             ).headers,
             proxies=self.__proxies,
-            verify=self.__certificatePath
+            verify=self.__certificate_path
         )
         if response.status_code != 200:
             return CheckException(response.text)
@@ -905,13 +917,13 @@ class Client(Callbacks, SocketHandler):
         **Returns**
             - **Success** : The event log of the account.
 
-            - **Fail** : :meth:`Exceptions <aminofix.lib.util.exceptions>`
+            - **Fail** : :meth:`Exceptions <aminodorksfix.lib.util.exceptions>`
         """
-        response = self.__session.get(
+        response = self._session.get(
             url=f"{API_URL}/g/s/eventlog/profile?language=en",
-            headers=self.__parse_headers(),
+            headers=self._parse_headers(),
             proxies=self.__proxies,
-            verify=self.__certificatePath
+            verify=self.__certificate_path
         )
         if response.status_code != 200:
             return CheckException(response.text)
@@ -928,16 +940,16 @@ class Client(Callbacks, SocketHandler):
 
         **Returns**
             - **Success** : :meth:`Community List
-                            <amino.lib.util.CommunityList>`
+                            <aminodorksfix.lib.util.CommunityList>`
 
-            - **Fail** : :meth:`Exceptions <aminofix.lib.util.exceptions>`
+            - **Fail** : :meth:`Exceptions <aminodorksfix.lib.util.exceptions>`
         """
-        response = self.__session.get(
+        response = self._session.get(
             url=f"{API_URL}/g/s/community/joined" +
                 f"?v=1&start={start}&size={size}",
-            headers=self.__parse_headers(),
+            headers=self._parse_headers(),
             proxies=self.__proxies,
-            verify=self.__certificatePath
+            verify=self.__certificate_path
         )
         if response.status_code != 200:
             return CheckException(response.text)
@@ -951,12 +963,12 @@ class Client(Callbacks, SocketHandler):
             start: int = 0,
             size: int = 25
     ) -> UserProfileList:
-        response = self.__session.get(
+        response = self._session.get(
             url=f"{API_URL}/g/s/community/joined" +
                 f"?v=1&start={start}&size={size}",
-            headers=self.__parse_headers(),
+            headers=self._parse_headers(),
             proxies=self.__proxies,
-            verify=self.__certificatePath
+            verify=self.__certificate_path
         )
         if response.status_code != 200:
             return CheckException(response.text)
@@ -973,15 +985,16 @@ class Client(Callbacks, SocketHandler):
             - **userId** : ID of the User.
 
         **Returns**
-            - **Success** : :meth:`User Object <amino.lib.util.UserProfile>`
+            - **Success** : :meth:`User Object
+                            <aminodorksfix.lib.util.UserProfile>`
 
-            - **Fail** : :meth:`Exceptions <aminofix.lib.util.exceptions>`
+            - **Fail** : :meth:`Exceptions <aminodorksfix.lib.util.exceptions>`
         """
-        response = self.__session.get(
+        response = self._session.get(
             url=f"{API_URL}/g/s/user-profile/{userId}",
-            headers=self.__parse_headers(),
+            headers=self._parse_headers(),
             proxies=self.__proxies,
-            verify=self.__certificatePath
+            verify=self.__certificate_path
         )
         if response.status_code != 200:
             return CheckException(response.text)
@@ -996,17 +1009,18 @@ class Client(Callbacks, SocketHandler):
             - **comId** : ID of the Community.
 
         **Returns**
-            - **Success** : :meth:`Community Object <amino.lib.util.Community>`
+            - **Success** : :meth:`Community Object
+                            <aminodorksfix.lib.util.Community>`
 
-            - **Fail** : :meth:`Exceptions <aminofix.lib.util.exceptions>`
+            - **Fail** : :meth:`Exceptions <aminodorksfix.lib.util.exceptions>`
         """
-        response = self.__session.get(
+        response = self._session.get(
             url=f"{API_URL}/g/s-x{comId}/community/info?" +
                 "withInfluencerList=1&withTopicList=true" +
                 "&influencerListOrderStrategy=fansCount",
-            headers=self.__parse_headers(),
+            headers=self._parse_headers(),
             proxies=self.__proxies,
-            verify=self.__certificatePath
+            verify=self.__certificate_path
         )
         if response.status_code != 200:
             return CheckException(response.text)
@@ -1022,15 +1036,15 @@ class Client(Callbacks, SocketHandler):
 
         **Returns**
             - **Success** : :meth:`Community List
-                             <amino.lib.util.CommunityList>`
+                             <aminodorksfix.lib.util.CommunityList>`
 
-            - **Fail** : :meth:`Exceptions <aminofix.lib.util.exceptions>`
+            - **Fail** : :meth:`Exceptions <aminodorksfix.lib.util.exceptions>`
         """
-        response = self.__session.get(
+        response = self._session.get(
             url=f"{API_URL}/g/s/search/amino-id-and-link?q={aminoId}",
-            headers=self.__parse_headers(),
+            headers=self._parse_headers(),
             proxies=self.__proxies,
-            verify=self.__certificatePath
+            verify=self.__certificate_path
         )
         if response.status_code != 200:
             return CheckException(response.text)
@@ -1058,16 +1072,17 @@ class Client(Callbacks, SocketHandler):
             - *size* : Size of the list.
 
         **Returns**
-            - **Success** : :meth:`User List <amino.lib.util.UserProfileList>`
+            - **Success** : :meth:`User List
+            <aminodorksfix.lib.util.UserProfileList>`
 
-            - **Fail** : :meth:`Exceptions <aminofix.lib.util.exceptions>`
+            - **Fail** : :meth:`Exceptions <aminodorksfix.lib.util.exceptions>`
         """
-        response = self.__session.get(
+        response = self._session.get(
             url=f"{API_URL}/g/s/user-profile/{userId}/joined?" +
                 f"start={start}&size={size}",
-            headers=self.__parse_headers(),
+            headers=self._parse_headers(),
             proxies=self.__proxies,
-            verify=self.__certificatePath
+            verify=self.__certificate_path
         )
         if response.status_code != 200:
             return CheckException(response.text)
@@ -1091,16 +1106,17 @@ class Client(Callbacks, SocketHandler):
             - *size* : Size of the list.
 
         **Returns**
-            - **Success** : :meth:`User List <amino.lib.util.UserProfileList>`
+            - **Success** : :meth:`User List
+                            <aminodorksfix.lib.util.UserProfileList>`
 
-            - **Fail** : :meth:`Exceptions <aminofix.lib.util.exceptions>`
+            - **Fail** : :meth:`Exceptions <aminodorksfix.lib.util.exceptions>`
         """
-        response = self.__session.get(
+        response = self._session.get(
             url=f"{API_URL}/g/s/user-profile/{userId}/member?" +
                 f"start={start}&size={size}",
-            headers=self.__parse_headers(),
+            headers=self._parse_headers(),
             proxies=self.__proxies,
-            verify=self.__certificatePath
+            verify=self.__certificate_path
         )
         if response.status_code != 200:
             return CheckException(response.text)
@@ -1122,15 +1138,16 @@ class Client(Callbacks, SocketHandler):
             - *size* : Size of the list.
 
         **Returns**
-            - **Success** : :meth:`Users List <amino.lib.util.UserProfileList>`
+            - **Success** : :meth:`Users List
+                            <aminodorksfix.lib.util.UserProfileList>`
 
-            - **Fail** : :meth:`Exceptions <aminofix.lib.util.exceptions>`
+            - **Fail** : :meth:`Exceptions <aminodorksfix.lib.util.exceptions>`
         """
-        response = self.__session.get(
+        response = self._session.get(
             url=f"{API_URL}/g/s/block?start={start}&size={size}",
-            headers=self.__parse_headers(),
+            headers=self._parse_headers(),
             proxies=self.__proxies,
-            verify=self.__certificatePath
+            verify=self.__certificate_path
         )
         if response.status_code != 200:
             return CheckException(response.text)
@@ -1150,13 +1167,13 @@ class Client(Callbacks, SocketHandler):
         **Returns**
             - **Success** : :meth:`List of User IDs <None>`
 
-            - **Fail** : :meth:`Exceptions <aminofix.lib.util.exceptions>`
+            - **Fail** : :meth:`Exceptions <aminodorksfix.lib.util.exceptions>`
         """
-        response = self.__session.get(
+        response = self._session.get(
             url=f"{API_URL}/g/s/block/full-list?start={start}&size={size}",
-            headers=self.__parse_headers(),
+            headers=self._parse_headers(),
             proxies=self.__proxies,
-            verify=self.__certificatePath
+            verify=self.__certificate_path
         )
         if response.status_code != 200:
             return CheckException(response.text)
@@ -1181,20 +1198,21 @@ class Client(Callbacks, SocketHandler):
             - *size* : Size of the list.
 
         **Returns**
-            - **Success** : :meth:`Comments List <amino.lib.util.CommentList>`
+            - **Success** : :meth:`Comments List
+                            <aminodorksfix.lib.util.CommentList>`
 
-            - **Fail** : :meth:`Exceptions <aminofix.lib.util.exceptions>`
+            - **Fail** : :meth:`Exceptions <aminodorksfix.lib.util.exceptions>`
         """
         sorting_type = COMMENTS_SORTING_MAP.get(sorting)
         if not sorting_type:
             raise WrongType(sorting)
 
-        response = self.__session.get(
+        response = self._session.get(
             url=f"{API_URL}/g/s/user-profile/{userId}/g-comment?" +
                 f"sort={sorting_type}&start={start}&size={size}",
-            headers=self.__parse_headers(),
+            headers=self._parse_headers(),
             proxies=self.__proxies,
-            verify=self.__certificatePath
+            verify=self.__certificate_path
         )
         if response.status_code != 200:
             return CheckException(response.text)
@@ -1220,7 +1238,7 @@ class Client(Callbacks, SocketHandler):
         **Returns**
             - **Success** : 200 (int)
 
-            - **Fail** : :meth:`Exceptions <aminofix.lib.util.exceptions>`
+            - **Fail** : :meth:`Exceptions <aminodorksfix.lib.util.exceptions>`
         """
 
         data = dumps({
@@ -1231,12 +1249,12 @@ class Client(Callbacks, SocketHandler):
             "timestamp": int(timestamp() * 1000)
         })
 
-        response = self.__session.post(
+        response = self._session.post(
             url=f"{API_URL}/g/s/{"g-flag" if asGuest else "flag"}",
             data=data,
-            headers=self.__parse_headers(data=data),
+            headers=self._parse_headers(data=data),
             proxies=self.__proxies,
-            verify=self.__certificatePath
+            verify=self.__certificate_path
         )
         if response.status_code != 200:
             return CheckException(response.text)
@@ -1253,19 +1271,19 @@ class Client(Callbacks, SocketHandler):
         **Returns**
             - **Success** : 200 (int)
 
-            - **Fail** : :meth:`Exceptions <aminofix.lib.util.exceptions>`
+            - **Fail** : :meth:`Exceptions <aminodorksfix.lib.util.exceptions>`
         """
         data = dumps({
             "targetUidList": userId, "timestamp": int(timestamp() * 1000)
         })
 
-        response = self.__session.post(
+        response = self._session.post(
             url=f"{API_URL}/g/s/user-profile/" +
                 f"{self._profile.userId}/joined",
-            headers=self.__parse_headers(data=data),
+            headers=self._parse_headers(data=data),
             data=data,
             proxies=self.__proxies,
-            verify=self.__certificatePath
+            verify=self.__certificate_path
         )
 
         if response.status_code != 200:
@@ -1283,14 +1301,14 @@ class Client(Callbacks, SocketHandler):
         **Returns**
             - **Success** : 200 (int)
 
-            - **Fail** : :meth:`Exceptions <aminofix.lib.util.exceptions>`
+            - **Fail** : :meth:`Exceptions <aminodorksfix.lib.util.exceptions>`
         """
-        response = self.__session.delete(
+        response = self._session.delete(
             url=f"{API_URL}/g/s/user-profile/" +
             f"{userId}/member/{self._profile.userId}",
-            headers=self.__parse_headers(),
+            headers=self._parse_headers(),
             proxies=self.__proxies,
-            verify=self.__certificatePath
+            verify=self.__certificate_path
         )
         if response.status_code != 200:
             return CheckException(response.text)
@@ -1307,13 +1325,13 @@ class Client(Callbacks, SocketHandler):
         **Returns**
             - **Success** : 200 (int)
 
-            - **Fail** : :meth:`Exceptions <aminofix.lib.util.exceptions>`
+            - **Fail** : :meth:`Exceptions <aminodorksfix.lib.util.exceptions>`
         """
-        response = self.__session.post(
+        response = self._session.post(
             url=f"{API_URL}/g/s/block/{userId}",
-            headers=self.__parse_headers(),
+            headers=self._parse_headers(),
             proxies=self.__proxies,
-            verify=self.__certificatePath
+            verify=self.__certificate_path
         )
         if response.status_code != 200:
             return CheckException(response.text)
@@ -1330,13 +1348,13 @@ class Client(Callbacks, SocketHandler):
         **Returns**
             - **Success** : 200 (int)
 
-            - **Fail** : :meth:`Exceptions <aminofix.lib.util.exceptions>`
+            - **Fail** : :meth:`Exceptions <aminodorksfix.lib.util.exceptions>`
         """
-        response = self.__session.delete(
+        response = self._session.delete(
             url=f"{API_URL}/g/s/block/{userId}",
-            headers=self.__parse_headers(),
+            headers=self._parse_headers(),
             proxies=self.__proxies,
-            verify=self.__certificatePath
+            verify=self.__certificate_path
         )
         if response.status_code != 200:
             return CheckException(response.text)
@@ -1354,7 +1372,7 @@ class Client(Callbacks, SocketHandler):
         **Returns**
             - **Success** : 200 (int)
 
-            - **Fail** : :meth:`Exceptions <aminofix.lib.util.exceptions>`
+            - **Fail** : :meth:`Exceptions <aminodorksfix.lib.util.exceptions>`
         """
         data: Dict[str, str | int] = {"timestamp": int(timestamp() * 1000)}
 
@@ -1362,12 +1380,12 @@ class Client(Callbacks, SocketHandler):
             data["invitationId"] = invitationId
 
         dumped_data = dumps(data)
-        response = self.__session.post(
+        response = self._session.post(
             url=f"{API_URL}/x{comId}/s/community/join",
             data=dumped_data,
-            headers=self.__parse_headers(data=dumped_data),
+            headers=self._parse_headers(data=dumped_data),
             proxies=self.__proxies,
-            verify=self.__certificatePath
+            verify=self.__certificate_path
         )
         if response.status_code != 200:
             return CheckException(response.text)
@@ -1385,18 +1403,18 @@ class Client(Callbacks, SocketHandler):
         **Returns**
             - **Success** : 200 (int)
 
-            - **Fail** : :meth:`Exceptions <aminofix.lib.util.exceptions>`
+            - **Fail** : :meth:`Exceptions <aminodorksfix.lib.util.exceptions>`
         """
         data = dumps({
             "message": message,
             "timestamp": int(timestamp() * 1000)
         })
-        response = self.__session.post(
+        response = self._session.post(
             url=f"{API_URL}/x{comId}/s/community/membership-request",
             data=data,
-            headers=self.__parse_headers(data=data),
+            headers=self._parse_headers(data=data),
             proxies=self.__proxies,
-            verify=self.__certificatePath
+            verify=self.__certificate_path
         )
         if response.status_code != 200:
             return CheckException(response.text)
@@ -1413,15 +1431,15 @@ class Client(Callbacks, SocketHandler):
         **Returns**
             - **Success** : 200 (int)
 
-            - **Fail** : :meth:`Exceptions <aminofix.lib.util.exceptions>`
+            - **Fail** : :meth:`Exceptions <aminodorksfix.lib.util.exceptions>`
         """
-        response = self.__session.post(
+        response = self._session.post(
             url=f"{API_URL}/x{comId}/s/community/leave",
-            headers=self.__parse_headers(
+            headers=self._parse_headers(
                 type="application/x-www-form-urlencoded"
             ),
             proxies=self.__proxies,
-            verify=self.__certificatePath
+            verify=self.__certificate_path
         )
         if response.status_code != 200:
             return CheckException(response.text)
@@ -1446,7 +1464,7 @@ class Client(Callbacks, SocketHandler):
         **Returns**
             - **Success** : 200 (int)
 
-            - **Fail** : :meth:`Exceptions <aminofix.lib.util.exceptions>`
+            - **Fail** : :meth:`Exceptions <aminodorksfix.lib.util.exceptions>`
         """
         data = dumps({
             "objectId": comId,
@@ -1456,12 +1474,12 @@ class Client(Callbacks, SocketHandler):
             "timestamp": int(timestamp() * 1000)
         })
 
-        response = self.__session.post(
+        response = self._session.post(
             url=f"{API_URL}/x{comId}/s/{"g-flag" if isGuest else "flag"}",
             data=data,
-            headers=self.__parse_headers(data=data),
+            headers=self._parse_headers(data=data),
             proxies=self.__proxies,
-            verify=self.__certificatePath
+            verify=self.__certificate_path
         )
         if response.status_code != 200:
             return CheckException(response.text)
@@ -1493,7 +1511,7 @@ class Client(Callbacks, SocketHandler):
         **Returns**
             - **Success** : 200 (int)
 
-            - **Fail** : :meth:`Exceptions <aminofix.lib.util.exceptions>`
+            - **Fail** : :meth:`Exceptions <aminodorksfix.lib.util.exceptions>`
         """
         data = {
             "address": None,
@@ -1526,12 +1544,12 @@ class Client(Callbacks, SocketHandler):
             data["extensions"] = {"defaultBubbleId": defaultBubbleId}
 
         data = dumps(data)
-        response = self.__session.post(
+        response = self._session.post(
             url=f"{API_URL}/g/s/user-profile/{self._profile.userId}",
-            headers=self.__parse_headers(data=data),
+            headers=self._parse_headers(data=data),
             data=data,
             proxies=self.__proxies,
-            verify=self.__certificatePath
+            verify=self.__certificate_path
         )
         if response.status_code != 200:
             return CheckException(response.text)
@@ -1548,18 +1566,18 @@ class Client(Callbacks, SocketHandler):
         **Returns**
             - **Success** : 200 (int)
 
-            - **Fail** : :meth:`Exceptions <aminofix.lib.util.exceptions>`
+            - **Fail** : :meth:`Exceptions <aminodorksfix.lib.util.exceptions>`
         """
         data = dumps({
             "aminoId": aminoId,
             "timestamp": int(timestamp() * 1000)
         })
-        response = self.__session.post(
+        response = self._session.post(
             url=f"{API_URL}/g/s/account/change-amino-id",
-            headers=self.__parse_headers(data=data),
+            headers=self._parse_headers(data=data),
             data=data,
             proxies=self.__proxies,
-            verify=self.__certificatePath
+            verify=self.__certificate_path
         )
         if response.status_code != 200:
             return CheckException(response.text)
@@ -1575,15 +1593,15 @@ class Client(Callbacks, SocketHandler):
 
         **Returns**
             - **Success** : :meth:`Community List
-                            <amino.lib.util.CommunityList>`
+                            <aminodorksfix.lib.util.CommunityList>`
 
-            - **Fail** : :meth:`Exceptions <aminofix.lib.util.exceptions>`
+            - **Fail** : :meth:`Exceptions <aminodorksfix.lib.util.exceptions>`
         """
-        response = self.__session.get(
+        response = self._session.get(
             url=f"{API_URL}/g/s/user-profile/{userId}/linked-community",
-            headers=self.__parse_headers(),
+            headers=self._parse_headers(),
             proxies=self.__proxies,
-            verify=self.__certificatePath
+            verify=self.__certificate_path
         )
         if response.status_code != 200:
             return CheckException(response.text)
@@ -1601,15 +1619,15 @@ class Client(Callbacks, SocketHandler):
 
         **Returns**
             - **Success** : :meth:`Community List
-                            <amino.lib.util.CommunityList>`
+                            <aminodorksfix.lib.util.CommunityList>`
 
-            - **Fail** : :meth:`Exceptions <aminofix.lib.util.exceptions>`
+            - **Fail** : :meth:`Exceptions <aminodorksfix.lib.util.exceptions>`
         """
-        response = self.__session.get(
+        response = self._session.get(
             url=f"{API_URL}/g/s/user-profile/{userId}/linked-community",
-            headers=self.__parse_headers(),
+            headers=self._parse_headers(),
             proxies=self.__proxies,
-            verify=self.__certificatePath
+            verify=self.__certificate_path
         )
         if response.status_code != 200:
             return CheckException(response.text)
@@ -1628,15 +1646,15 @@ class Client(Callbacks, SocketHandler):
         **Returns**
             - **Success** : 200 (int)
 
-            - **Fail** : :meth:`Exceptions <aminofix.lib.util.exceptions>`
+            - **Fail** : :meth:`Exceptions <aminodorksfix.lib.util.exceptions>`
         """
         data = dumps({"ndcIds": comIds, "timestamp": int(timestamp() * 1000)})
-        response = self.__session.post(
+        response = self._session.post(
             url=f"{API_URL}/g/s/user-profile/{self._profile.userId}" +
                 "/linked-community/reorder",
-            headers=self.__parse_headers(data=data),
+            headers=self._parse_headers(data=data),
             data=data, proxies=self.__proxies,
-            verify=self.__certificatePath
+            verify=self.__certificate_path
         )
         if response.status_code != 200:
             return CheckException(response.text)
@@ -1653,14 +1671,14 @@ class Client(Callbacks, SocketHandler):
         **Returns**
             - **Success** : 200 (int)
 
-            - **Fail** : :meth:`Exceptions <aminofix.lib.util.exceptions>`
+            - **Fail** : :meth:`Exceptions <aminodorksfix.lib.util.exceptions>`
         """
-        response = self.__session.post(
+        response = self._session.post(
             url=f"{API_URL}/g/s/user-profile" +
                 f"/{self._profile.userId}/linked-community/{comId}",
-            headers=self.__parse_headers(),
+            headers=self._parse_headers(),
             proxies=self.__proxies,
-            verify=self.__certificatePath
+            verify=self.__certificate_path
         )
         if response.status_code != 200:
             return CheckException(response.text)
@@ -1677,21 +1695,21 @@ class Client(Callbacks, SocketHandler):
         **Returns**
             - **Success** : 200 (int)
 
-            - **Fail** : :meth:`Exceptions <aminofix.lib.util.exceptions>`
+            - **Fail** : :meth:`Exceptions <aminodorksfix.lib.util.exceptions>`
         """
-        response = self.__session.delete(
+        response = self._session.delete(
             url=f"{API_URL}/g/s/user-profile/" +
                 f"{self._profile.userId}/linked-community/{comId}",
-            headers=self.__parse_headers(),
+            headers=self._parse_headers(),
             proxies=self.__proxies,
-            verify=self.__certificatePath
+            verify=self.__certificate_path
         )
         if response.status_code != 200:
             return CheckException(response.text)
 
         return response.status_code
 
-    def comment(self, message: str, userId: str, replyTo: str = None) -> int:
+    def comment(self, message: str, userId: str, replyTo: str = None) -> None:
         """
         Comment on a User's Wall, Blog or Wiki.
 
@@ -1705,7 +1723,7 @@ class Client(Callbacks, SocketHandler):
         **Returns**
             - **Success** : 200 (int)
 
-            - **Fail** : :meth:`Exceptions <aminofix.lib.util.exceptions>`
+            - **Fail** : :meth:`Exceptions <aminodorksfix.lib.util.exceptions>`
         """
 
         data = {
@@ -1721,19 +1739,17 @@ class Client(Callbacks, SocketHandler):
 
         data = dumps(data)
 
-        response = self.__session.post(
+        response = self._session.post(
             url=f"{API_URL}/g/s/user-profile/{userId}/g-comment",
-            headers=self.__parse_headers(data=data),
+            headers=self._parse_headers(data=data),
             data=data,
             proxies=self.__proxies,
-            verify=self.__certificatePath
+            verify=self.__certificate_path
         )
         if response.status_code != 200:
             return CheckException(response.text)
 
-        return response.status_code
-
-    def delete_comment(self, commentId: str, userId: str) -> int:
+    def delete_comment(self, commentId: str, userId: str) -> None:
         """
         Delete a Comment on a User's Wall, Blog or Wiki.
 
@@ -1746,20 +1762,18 @@ class Client(Callbacks, SocketHandler):
         **Returns**
             - **Success** : 200 (int)
 
-            - **Fail** : :meth:`Exceptions <aminofix.lib.util.exceptions>`
+            - **Fail** : :meth:`Exceptions <aminodorksfix.lib.util.exceptions>`
         """
-        response = self.__session.delete(
+        response = self._session.delete(
             url=f"{API_URL}/g/s/user-profile/{userId}/g-comment/{commentId}",
-            headers=self.__parse_headers(),
+            headers=self._parse_headers(),
             proxies=self.__proxies,
-            verify=self.__certificatePath
+            verify=self.__certificate_path
         )
         if response.status_code != 200:
             return CheckException(response.text)
 
-        return response.status_code
-
-    def like_comment(self, commentId: str, userId: str) -> int:
+    def like_comment(self, commentId: str, userId: str) -> None:
         """
         Like a Comment on a User's Wall, Blog or Wiki.
 
@@ -1772,7 +1786,7 @@ class Client(Callbacks, SocketHandler):
         **Returns**
             - **Success** : 200 (int)
 
-            - **Fail** : :meth:`Exceptions <aminofix.lib.util.exceptions>`
+            - **Fail** : :meth:`Exceptions <aminodorksfix.lib.util.exceptions>`
         """
         data = dumps({
             "value": 4,
@@ -1780,20 +1794,18 @@ class Client(Callbacks, SocketHandler):
             "eventSource": "UserProfileView"
         })
 
-        response = self.__session.post(
+        response = self._session.post(
             url=f"{API_URL}/g/s/user-profile/{userId}" +
                 f"/comment/{commentId}/g-vote?cv=1.2&value=1",
-            headers=self.__parse_headers(data=data),
+            headers=self._parse_headers(data=data),
             data=data,
             proxies=self.__proxies,
-            verify=self.__certificatePath
+            verify=self.__certificate_path
         )
         if response.status_code != 200:
             return CheckException(response.text)
 
-        return response.status_code
-
-    def unlike_comment(self, commentId: str, userId: str) -> int:
+    def unlike_comment(self, commentId: str, userId: str) -> None:
         """
         Remove a like from a Comment on a User's Wall, Blog or Wiki.
 
@@ -1806,19 +1818,17 @@ class Client(Callbacks, SocketHandler):
         **Returns**
             - **Success** : 200 (int)
 
-            - **Fail** : :meth:`Exceptions <aminofix.lib.util.exceptions>`
+            - **Fail** : :meth:`Exceptions <aminodorksfix.lib.util.exceptions>`
         """
-        response = self.__session.delete(
+        response = self._session.delete(
             url=f"{API_URL}/g/s/user-profile/{userId}/" +
             f"comment/{commentId}/g-vote?eventSource=UserProfileView",
-            headers=self.__parse_headers(),
+            headers=self._parse_headers(),
             proxies=self.__proxies,
-            verify=self.__certificatePath
+            verify=self.__certificate_path
         )
         if response.status_code != 200:
             return CheckException(response.text)
-
-        return response.status_code
 
     def get_membership_info(self) -> Membership:
         """
@@ -1829,15 +1839,15 @@ class Client(Callbacks, SocketHandler):
 
         **Returns**
             - **Success** : :meth:`Membership Object
-                            <amino.lib.util.Membership>`
+                            <aminodorksfix.lib.util.Membership>`
 
-            - **Fail** : :meth:`Exceptions <aminofix.lib.util.exceptions>`
+            - **Fail** : :meth:`Exceptions <aminodorksfix.lib.util.exceptions>`
         """
-        response = self.__session.get(
+        response = self._session.get(
             url=f"{API_URL}/g/s/membership?force=true",
-            headers=self.__parse_headers(),
+            headers=self._parse_headers(),
             proxies=self.__proxies,
-            verify=self.__certificatePath
+            verify=self.__certificate_path
         )
         if response.status_code != 200:
             return CheckException(response.text)
@@ -1860,19 +1870,20 @@ class Client(Callbacks, SocketHandler):
             - *size* : Size of the list.
 
         **Returns**
-            - **Success** : :meth:`Blogs List <amino.lib.util.BlogList>`
+            - **Success** : :meth:`Blogs List
+                            <aminodorksfix.lib.util.BlogList>`
 
-            - **Fail** : :meth:`Exceptions <aminofix.lib.util.exceptions>`
+            - **Fail** : :meth:`Exceptions <aminodorksfix.lib.util.exceptions>`
         """
         if language not in SUPPORTED_LANGAUGES:
             raise UnsupportedLanguage(language)
 
-        response = self.__session.get(
+        response = self._session.get(
             url=f"{API_URL}/g/s/announcement?" +
                 f"language={language}&start={start}&size={size}",
-            headers=self.__parse_headers(),
+            headers=self._parse_headers(),
             proxies=self.__proxies,
-            verify=self.__certificatePath
+            verify=self.__certificate_path
         )
         if response.status_code != 200:
             return CheckException(response.text)
@@ -1887,15 +1898,16 @@ class Client(Callbacks, SocketHandler):
             - No parameters required.
 
         **Returns**
-            - **Success** : :meth:`Wallet Object <amino.lib.util.WalletInfo>`
+            - **Success** : :meth:`Wallet Object
+                            <aminodorksfix.lib.util.WalletInfo>`
 
-            - **Fail** : :meth:`Exceptions <aminofix.lib.util.exceptions>`
+            - **Fail** : :meth:`Exceptions <aminodorksfix.lib.util.exceptions>`
         """
-        response = self.__session.get(
+        response = self._session.get(
             url=f"{API_URL}/g/s/wallet",
-            headers=self.__parse_headers(),
+            headers=self._parse_headers(),
             proxies=self.__proxies,
-            verify=self.__certificatePath
+            verify=self.__certificate_path
         )
         if response.status_code != 200:
             return CheckException(response.text)
@@ -1915,15 +1927,16 @@ class Client(Callbacks, SocketHandler):
             - *size* : Size of the list.
 
         **Returns**
-            - **Success** : :meth:`Wallet Object <amino.lib.util.WalletInfo>`
+            - **Success** : :meth:`Wallet Object
+                            <aminodorksfix.lib.util.WalletInfo>`
 
-            - **Fail** : :meth:`Exceptions <aminofix.lib.util.exceptions>`
+            - **Fail** : :meth:`Exceptions <aminodorksfix.lib.util.exceptions>`
         """
-        response = self.__session.get(
+        response = self._session.get(
             url=f"{API_URL}/g/s/wallet/coin/history?start={start}&size={size}",
-            headers=self.__parse_headers(),
+            headers=self._parse_headers(),
             proxies=self.__proxies,
-            verify=self.__certificatePath
+            verify=self.__certificate_path
         )
         if response.status_code != 200:
             return CheckException(response.text)
@@ -1940,11 +1953,12 @@ class Client(Callbacks, SocketHandler):
             - **deviceID** : ID of the Device.
 
         **Returns**
-            - **Success** : :meth:`User ID <amino.lib.util.UserProfile.userId>`
+            - **Success** : :meth:`User ID
+                            <aminodorksfix.lib.util.UserProfile.userId>`
 
-            - **Fail** : :meth:`Exceptions <aminofix.lib.util.exceptions>`
+            - **Fail** : :meth:`Exceptions <aminodorksfix.lib.util.exceptions>`
         """
-        response = self.__session.get(
+        response = self._session.get(
             url=f"{API_URL}/g/s/auid?deviceId={deviceId}"
         )
         if response.status_code != 200:
@@ -1961,15 +1975,16 @@ class Client(Callbacks, SocketHandler):
                 - ``http://aminoapps.com/p/EXAMPLE``
 
         **Returns**
-            - **Success** : :meth:`From Code Object <amino.lib.util.FromCode>`
+            - **Success** : :meth:`From Code Object
+                            <aminodorksfix.lib.util.FromCode>`
 
-            - **Fail** : :meth:`Exceptions <aminofix.lib.util.exceptions>`
+            - **Fail** : :meth:`Exceptions <aminodorksfix.lib.util.exceptions>`
         """
-        response = self.__session.get(
+        response = self._session.get(
             url=f"{API_URL}/g/s/link-resolution?q={code}",
-            headers=self.__parse_headers(),
+            headers=self._parse_headers(),
             proxies=self.__proxies,
-            verify=self.__certificatePath
+            verify=self.__certificate_path
         )
         if response.status_code != 200:
             return CheckException(response.text)
@@ -1992,9 +2007,10 @@ class Client(Callbacks, SocketHandler):
                                                     in a Community.
 
         **Returns**
-            - **Success** : :meth:`From Code Object <amino.lib.util.FromCode>`
+            - **Success** : :meth:`From Code Object
+                            <aminodorksfix.lib.util.FromCode>`
 
-            - **Fail** : :meth:`Exceptions <aminofix.lib.util.exceptions>`
+            - **Fail** : :meth:`Exceptions <aminodorksfix.lib.util.exceptions>`
         """
         data = dumps({
             "objectId": objectId,
@@ -2003,13 +2019,13 @@ class Client(Callbacks, SocketHandler):
             "timestamp": int(timestamp() * 1000)
         })
 
-        response = self.__session.post(
+        response = self._session.post(
             url=f"{API_URL}/g/{f"s-x{comId}" if comId else "s"}" +
                 "/link-resolution",
-            headers=self.__parse_headers(data=data),
+            headers=self._parse_headers(data=data),
             data=data,
             proxies=self.__proxies,
-            verify=self.__certificatePath
+            verify=self.__certificate_path
         )
         if response.status_code != 200:
             return CheckException(response.text)
@@ -2026,14 +2042,14 @@ class Client(Callbacks, SocketHandler):
         **Returns**
             - **Success** : :meth:`List of Supported Languages <List>`
 
-            - **Fail** : :meth:`Exceptions <aminofix.lib.util.exceptions>`
+            - **Fail** : :meth:`Exceptions <aminodorksfix.lib.util.exceptions>`
         """
-        response = self.__session.get(
+        response = self._session.get(
             url=f"{API_URL}/g/s/community-collection/" +
                 "supported-languages?start=0&size=100",
-            headers=self.__parse_headers(),
+            headers=self._parse_headers(),
             proxies=self.__proxies,
-            verify=self.__certificatePath
+            verify=self.__certificate_path
         )
         if response.status_code != 200:
             return CheckException(response.text)
@@ -2050,13 +2066,13 @@ class Client(Callbacks, SocketHandler):
         **Returns**
             - **Success** : 200 (int)
 
-            - **Fail** : :meth:`Exceptions <aminofix.lib.util.exceptions>`
+            - **Fail** : :meth:`Exceptions <aminodorksfix.lib.util.exceptions>`
         """
-        response = self.__session.post(
+        response = self._session.post(
             url=f"{API_URL}/g/s/coupon/new-user-coupon/claim",
-            headers=self.__parse_headers(),
+            headers=self._parse_headers(),
             proxies=self.__proxies,
-            verify=self.__certificatePath
+            verify=self.__certificate_path
         )
         if response.status_code != 200:
             return CheckException(response.text)
@@ -2078,14 +2094,14 @@ class Client(Callbacks, SocketHandler):
         **Returns**
             - **Success** : :meth:`List <List>`
 
-            - **Fail** : :meth:`Exceptions <aminofix.lib.util.exceptions>`
+            - **Fail** : :meth:`Exceptions <aminodorksfix.lib.util.exceptions>`
         """
-        response = self.__session.get(
+        response = self._session.get(
             url=f"{API_URL}/g/s/store/subscription?" +
                 f"objectType=122&start={start}&size={size}",
-            headers=self.__parse_headers(),
+            headers=self._parse_headers(),
             proxies=self.__proxies,
-            verify=self.__certificatePath
+            verify=self.__certificate_path
         )
         if response.status_code != 200:
             return CheckException(response.text)
@@ -2094,6 +2110,7 @@ class Client(Callbacks, SocketHandler):
 
     def get_all_users(
             self,
+            type: str = "recent",
             start: int = 0,
             size: int = 25
     ) -> UserProfileCountList:
@@ -2106,16 +2123,16 @@ class Client(Callbacks, SocketHandler):
 
         **Returns**
             - **Success** : :meth:`User Profile Count List Object
-                            <amino.lib.util.UserProfileCountList>`
+                            <aminodorksfix.lib.util.UserProfileCountList>`
 
-            - **Fail** : :meth:`Exceptions <aminofix.lib.util.exceptions>`
+            - **Fail** : :meth:`Exceptions <aminodorksfix.lib.util.exceptions>`
         """
-        response = self.__session.get(
+        response = self._session.get(
             url=f"{API_URL}/g/s/user-profile?" +
-                f"type=recent&start={start}&size={size}",
-            headers=self.__parse_headers(),
+                f"type={type}&start={start}&size={size}",
+            headers=self._parse_headers(),
             proxies=self.__proxies,
-            verify=self.__certificatePath
+            verify=self.__certificate_path
         )
         if response.status_code != 200:
             return CheckException(response.text)
@@ -2133,14 +2150,14 @@ class Client(Callbacks, SocketHandler):
         **Returns**
             - **Success** : The identified community object
 
-            - **Fail** : :meth:`Exceptions <amino.lib.util.exceptions>`
+            - **Fail** : :meth:`Exceptions <aminodorksfix.lib.util.exceptions>`
         """
-        response = self.__session.get(
+        response = self._session.get(
             f"{API_URL}/g/s/community/link-identify" +
             f"?q=http%3A%2F%2Faminoapps.com%2Finvite%2F{code}",
-            headers=self.__parse_headers(),
+            headers=self._parse_headers(),
             proxies=self.__proxies,
-            verify=self.__certificatePath
+            verify=self.__certificate_path
         )
 
         return loads(response.text)
@@ -2156,7 +2173,7 @@ class Client(Callbacks, SocketHandler):
         **Returns**
             - **Success** : 200 (int)
 
-            - **Fail** : :meth:`Exceptions <aminofix.lib.util.exceptions>`
+            - **Fail** : :meth:`Exceptions <aminodorksfix.lib.util.exceptions>`
         """
 
         data = dumps({
@@ -2164,12 +2181,12 @@ class Client(Callbacks, SocketHandler):
             "timestamp": int(timestamp() * 1000)
         })
 
-        response = self.__session.post(
+        response = self._session.post(
             url=f"{API_URL}/g/s/wallet/ads/config",
-            headers=self.__parse_headers(data=data),
+            headers=self._parse_headers(data=data),
             data=data,
             proxies=self.__proxies,
-            verify=self.__certificatePath
+            verify=self.__certificate_path
         )
         if response.status_code != 200:
             return CheckException(response.text)
@@ -2189,9 +2206,9 @@ class Client(Callbacks, SocketHandler):
             "timestamp": timestamp()
         })
 
-        response = self.__session.post(
+        response = self._session.post(
             url=f"{API_URL}/g/s/store/purchase",
-            headers=self.__parse_headers(data=data), data=data
+            headers=self._parse_headers(data=data), data=data
         )
         if response.status_code != 200:
             return CheckException(loads(response.text))

@@ -20,4 +20,4 @@ class SubClientKwargs(TypedDict):
     profile: UserProfile
     deviceId: NotRequired[str]
     proxies: NotRequired[Dict[str, str]]
-    certificatePath: NotRequired[str]
+    certificatePath: NotRequired[bool]
