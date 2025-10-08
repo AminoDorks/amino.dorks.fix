@@ -4,3 +4,4 @@
 /.github/
 /build/
 __pycache__/
+test.py

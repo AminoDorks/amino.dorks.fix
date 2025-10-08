@@ -78,8 +78,6 @@ class Client(Callbacks, SocketHandler):
         )
         Callbacks.__init__(self, self)
 
-        self.tapjoy_headers = headers.Tapjoy().headers
-
         self.json = None
         self.sid = None
         self.userId = None
@@ -232,7 +230,7 @@ class Client(Callbacks, SocketHandler):
 
     async def verify_yourself(self, email: str, password: str) -> int:
         """
-        Verify yourself
+        Passes your IP to account
 
         **Parameters**
             - **email** : Email of the account.
@@ -2386,12 +2384,6 @@ class Client(Callbacks, SocketHandler):
         async with self.session.post(f"{self.api}/g/s/membership/product/subscribe", headers=await self.parse_headers(data=data), data=data) as response:
             if response.status != 200: return exceptions.CheckException(await response.text())
             else: return response.status
-
-    async def watch_ad(self, userId: str = None):
-        data = json.dumps(headers.Tapjoy(userId if userId else self.userId).data)
-        async with self.session.post("https://ads.tapdaq.com/v4/analytics/reward", headers=self.tapjoy_headers, data=data) as response:
-            if response.status != 204: return exceptions.CheckException(await response.text())
-            else: return response.status; await self.session.close()
 
     async def purchase(self, objectId: str, isAutoRenew: bool = False):
         data = json.dumps({

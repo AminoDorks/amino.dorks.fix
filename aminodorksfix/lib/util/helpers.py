@@ -26,9 +26,11 @@ def gen_deviceId(data: bytes = None) -> str:
     mac = new(DEVICE_KEY, identifier, sha1)
     return f"{identifier.hex()}{mac.hexdigest()}".upper()
 
+
 def signature(data: Union[str, bytes]) -> str:
     data = data if isinstance(data, bytes) else data.encode("utf-8")
     return b64encode(PREFIX + new(SIG_KEY, data, sha1).digest()).decode("utf-8")
+
 
 def get_credentials(session: Session, userId: str):
     response = session.get(f"{gen_api_url}/signature/credentials/{userId}", headers=gen_headers)
@@ -36,38 +38,45 @@ def get_credentials(session: Session, userId: str):
         raise Exception(response.text)
     return response.json()["credentials"]
 
+
 async def get_certs_a(session: ClientSession, userId: str):
-    async with session.get(f"{gen_api_url}/signature/credentials/{userId}",headers=gen_headers) as response:
-        if response.status !=200:
+    async with session.get(f"{gen_api_url}/signature/credentials/{userId}", headers=gen_headers) as response:
+        if response.status != 200:
             raise Exception(await response.text())
         return (await response.json())["credentials"]
 
+
 def new_sig(session: Session, data: str, userId: str):
-    data=json.dumps({
-        "payload":data,
-        "userId":userId
+    data = json.dumps({
+        "payload": data,
+        "userId": userId
     })
-    response=session.post(f"{gen_api_url}/signature/ecdsa",headers=gen_headers,data=data)
-    if response.status_code !=200:
+    response = session.post(f"{gen_api_url}/signature/ecdsa", headers=gen_headers,data=data)
+    if response.status_code != 200:
         raise Exception(response.text)
     return response.json()["ECDSA"]
 
+
 async def new_sig_a(session: ClientSession, data: str, userId: str):
-    data=json.dumps({
-        "payload":data,
-        "userId":userId
+    data = json.dumps({
+        "payload": data,
+        "userId": userId
     })
-    async with session.post(f"{gen_api_url}/signature/ecdsa",headers=gen_headers,data=data) as response:
-        if response.status !=200:
+    async with session.post(f"{gen_api_url}/signature/ecdsa", headers=gen_headers,data=data) as response:
+        if response.status != 200:
             raise Exception(await response.text())
         return (await response.json())["ECDSA"]
+
 
 def update_deviceId(device: str) -> str:
     return gen_deviceId(bytes.fromhex(device[2:42]))
 
+
 def decode_sid(sid: str) -> dict:
     return json.loads(b64decode(reduce(lambda a, e: a.replace(*e), ("-+", "_/"), sid + "=" * (-len(sid) % 4)).encode())[1:-20].decode())
 
+
 def sid_to_uid(SID: str) -> str: return decode_sid(SID)["2"]
+
 
 def sid_to_ip_address(SID: str) -> str: return decode_sid(SID)["4"]

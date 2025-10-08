@@ -26,7 +26,8 @@ from json import (
 from .lib.util.exceptions import (
     CheckException,
     NoCommunity,
-    SpecifyType
+    SpecifyType,
+    WrongType
 )
 from .constants import (
     API_URL
@@ -41,7 +42,34 @@ from .lib.util.objects import (
     InviteCodeList,
     LotteryLog,
     Thread,
-    VcReputation
+    VcReputation,
+    UserCheckIns,
+    WikiList,
+    UserAchievements,
+    InfluencerFans,
+    UserSavedBlogs,
+    GetWikiInfo,
+    WikiCategoryList,
+    WikiCategory,
+    TippedUsersSummary,
+    ThreadList,
+    GetMessages,
+    Message,
+    GetBlogInfo,
+    SharedFolderFile,
+    BlogCategoryList,
+    QuizRankings,
+    RecentBlogs,
+    NotificationList,
+    NoticeList,
+    StickerCollection,
+    CommunityStickerCollection,
+    GetSharedFolderInfo,
+    SharedFolderFileList,
+    AdminLogList,
+    QuizQuestionList,
+    WikiRequestList,
+    LiveLayer
 )
 
 device = headers.device_id
@@ -2442,8 +2470,6 @@ class SubClient(Client):
             response = self._session.get(
                 url=f"{self.__cross_point}/community/leaderboard?rankingType=5&start={start}&size={size}",
                 headers=self._parse_headers(), proxies=self.__proxies, verify=self.__certificate_path)
-        else:
-            raise WrongType(type)
         if response.status_code != 200:
             return CheckException(response.text)
         else:

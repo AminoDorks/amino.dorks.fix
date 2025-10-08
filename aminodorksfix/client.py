@@ -68,12 +68,14 @@ class Client(Callbacks, SocketHandler):
         "__api_key",
         "__device_id",
         "__proxies",
+        "__api_proxies",
         "__certificate_path",
         "__sid",
         "__account",
         "__active_chat_loops",
         "__stop_loop",
         "_session",
+        "_dorks_session",
         "_socket_enabled",
         "_profile"
     )
@@ -115,6 +117,7 @@ class Client(Callbacks, SocketHandler):
         )
         Callbacks.__init__(self, self)
         self._session = Session()
+        self._dorks_session = Session()
         self.__api_key = api_key
         self.__device_id = deviceId
         self.__proxies = proxies
@@ -157,8 +160,7 @@ class Client(Callbacks, SocketHandler):
             data=data,
             type=type
         )
-        header.generate_ecdsa_sync(self._session)
-        print(header.headers)
+        header.generate_ecdsa_sync(self._dorks_session)
 
         return header.headers
 
@@ -385,7 +387,7 @@ class Client(Callbacks, SocketHandler):
 
     def verify_yourself(self, email: str, password: str) -> int:
         """
-        Verify yourself
+        Passes your IP to account
 
         **Parameters**
             - **email** : Email of the account.
