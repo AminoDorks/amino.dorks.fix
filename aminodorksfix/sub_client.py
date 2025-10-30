@@ -1,16 +1,3 @@
-from uuid import UUID
-from os import urandom
-from time import timezone
-from binascii import hexlify
-from time import time as timestamp
-from json_minify import json_minify
-from base64 import b64encode
-
-from .client import Client
-from .lib.util import headers
-from .lib.util.models import SubClientKwargs
-from .lib.util.helpers import gen_deviceId
-
 from typing import (
     BinaryIO,
     Unpack,
@@ -30,7 +17,10 @@ from .lib.util.exceptions import (
     WrongType
 )
 from .constants import (
-    API_URL
+    API_URL,
+    COMMENTS_SORTING_MAP,
+    FEATURE_CHAT_TIME_MAP,
+    FEATURE_ITEMS_TIME_MAP
 )
 from .lib.util.objects import (
     UserProfile,
@@ -69,8 +59,23 @@ from .lib.util.objects import (
     AdminLogList,
     QuizQuestionList,
     WikiRequestList,
-    LiveLayer
+    LiveLayer,
+    MessageList
 )
+
+from uuid import UUID
+from os import urandom
+from time import timezone
+from binascii import hexlify
+from time import time as timestamp
+from json_minify import json_minify
+from base64 import b64encode
+
+from .client import Client
+from .lib.util import headers
+from .lib.util.models import SubClientKwargs
+from .lib.util.helpers import gen_deviceId
+from .lib.util.enums import LeaderboardType
 
 device = headers.device_id
 headers.sid = headers.sid
@@ -109,9 +114,9 @@ class SubClient(Client):
         Client.__init__(
             self,
             api_key=kwargs.get("profile").api_key,
-            deviceId=kwargs.get("deviceId", gen_deviceId()),
+            deviceId=kwargs.get("device_id", gen_deviceId()),
             proxies=kwargs.get("proxies"),
-            certificatePath=kwargs.get("certificatePath", False)
+            certificatePath=kwargs.get("certificate_path", False)
         )
 
         if comId:
@@ -2351,48 +2356,92 @@ class SubClient(Client):
             loads(response.text)["userProfileList"]
         ).UserProfileList
 
-    def get_user_checkins(self, userId: str):
-        response = self._session.get(url=f"{self.__endpoint}/s/check-in/stats/{userId}?timezone={-timezone // 1000}",
-                                    headers=self._parse_headers(), proxies=self.__proxies, verify=self.__certificate_path)
-        if response.status_code != 200:
-            return CheckException(response.text)
-        else:
-            return UserCheckIns(loads(response.text)).UserCheckIns
-
-    def get_user_blogs(self, userId: str, start: int = 0, size: int = 25):
-        response = self._session.get(url=f"{self.__endpoint}/s/blog?type=user&q={userId}&start={start}&size={size}",
-                                    headers=self._parse_headers(), proxies=self.__proxies, verify=self.__certificate_path)
-        if response.status_code != 200:
-            return CheckException(response.text)
-        else:
-            return BlogList(loads(response.text)["blogList"]).BlogList
-
-    def get_user_wikis(self, userId: str, start: int = 0, size: int = 25):
+    def get_user_checkins(self, userId: str) -> UserCheckIns:
         response = self._session.get(
-            url=f"{self.__endpoint}/s/item?type=user-all&start={start}&size={size}&cv=1.2&uid={userId}",
-            headers=self._parse_headers(), proxies=self.__proxies, verify=self.__certificate_path)
+            url=f"{self.__endpoint}/s/check-in/stats/{userId}" +
+                f"?timezone={-timezone // 1000}",
+            headers=self._parse_headers(),
+            proxies=self.__proxies,
+            verify=self.__certificate_path
+        )
         if response.status_code != 200:
             return CheckException(response.text)
-        else:
-            return WikiList(loads(response.text)["itemList"]).WikiList
 
-    def get_user_achievements(self, userId: str):
-        response = self._session.get(url=f"{self.__endpoint}/s/user-profile/{userId}/achievements",
-                                    headers=self._parse_headers(), proxies=self.__proxies, verify=self.__certificate_path)
+        return UserCheckIns(loads(response.text)).UserCheckIns
+
+    def get_user_blogs(
+            self,
+            userId: str,
+            start: int = 0,
+            size: int = 25
+    ) -> BlogList:
+        response = self._session.get(
+            url=f"{self.__endpoint}/s/blog?" +
+                f"type=user&q={userId}&start={start}&size={size}",
+            headers=self._parse_headers(),
+            proxies=self.__proxies,
+            verify=self.__certificate_path
+        )
         if response.status_code != 200:
             return CheckException(response.text)
-        else:
-            return UserAchievements(loads(response.text)["achievements"]).UserAchievements
 
-    def get_influencer_fans(self, userId: str, start: int = 0, size: int = 25):
-        response = self._session.get(url=f"{self.__endpoint}/s/influencer/{userId}/fans?start={start}&size={size}",
-                                    headers=self._parse_headers(), proxies=self.__proxies, verify=self.__certificate_path)
+        return BlogList(loads(response.text)["blogList"]).BlogList
+
+    def get_user_wikis(
+            self,
+            userId: str,
+            start: int = 0,
+            size: int = 25
+    ) -> WikiList:
+        response = self._session.get(
+            url=f"{self.__endpoint}/s/item?type=user-all" +
+                f"&start={start}&size={size}&cv=1.2&uid={userId}",
+            headers=self._parse_headers(),
+            proxies=self.__proxies,
+            verify=self.__certificate_path
+        )
         if response.status_code != 200:
             return CheckException(response.text)
-        else:
-            return InfluencerFans(loads(response.text)).InfluencerFans
 
-    def get_blocked_users(self, start: int = 0, size: int = 25):
+        return WikiList(loads(response.text)["itemList"]).WikiList
+
+    def get_user_achievements(self, userId: str) -> UserAchievements:
+        response = self._session.get(
+            url=f"{self.__endpoint}/s/user-profile/{userId}/achievements",
+            headers=self._parse_headers(),
+            proxies=self.__proxies,
+            verify=self.__certificate_path
+        )
+        if response.status_code != 200:
+            return CheckException(response.text)
+
+        return UserAchievements(
+            loads(response.text)["achievements"]
+        ).UserAchievements
+
+    def get_influencer_fans(
+            self,
+            userId: str,
+            start: int = 0,
+            size: int = 25
+    ) -> InfluencerFans:
+        response = self._session.get(
+            url=f"{self.__endpoint}/s/influencer/" +
+                f"{userId}/fans?start={start}&size={size}",
+            headers=self._parse_headers(),
+            proxies=self.__proxies,
+            verify=self.__certificate_path
+        )
+        if response.status_code != 200:
+            return CheckException(response.text)
+
+        return InfluencerFans(loads(response.text)).InfluencerFans
+
+    def get_blocked_users(
+            self,
+            start: int = 0,
+            size: int = 25
+    ) -> UserProfileList:
         """
         List of Users that the User Blocked.
 
@@ -2401,18 +2450,25 @@ class SubClient(Client):
             - *size* : Size of the list.
 
         **Returns**
-            - **Success** : :meth:`Users List <aminodorksfix.lib.util.UserProfileList>`
+            - **Success** : :meth:`Users List
+            <aminodorksfix.lib.util.UserProfileList>`
 
             - **Fail** : :meth:`Exceptions <aminodorksfix.lib.util.exceptions>`
         """
-        response = self._session.get(url=f"{self.__endpoint}/s/block?start={start}&size={size}",
-                                    headers=self._parse_headers(), proxies=self.__proxies, verify=self.__certificate_path)
+        response = self._session.get(
+            url=f"{self.__endpoint}/s/block?start={start}&size={size}",
+            headers=self._parse_headers(),
+            proxies=self.__proxies,
+            verify=self.__certificate_path
+        )
         if response.status_code != 200:
             return CheckException(response.text)
-        else:
-            return UserProfileList(loads(response.text)["userProfileList"]).UserProfileList
 
-    def get_blocker_users(self, start: int = 0, size: int = 25):
+        return UserProfileList(
+            loads(response.text)["userProfileList"]
+        ).UserProfileList
+
+    def get_blocker_users(self, start: int = 0, size: int = 25) -> List[str]:
         """
         List of Users that are Blocking the User.
 
@@ -2426,114 +2482,220 @@ class SubClient(Client):
             - **Fail** : :meth:`Exceptions <aminodorksfix.lib.util.exceptions>`
         """
 
-        response = self._session.get(url=f"{self.__endpoint}/s/block/full-list", headers=self._parse_headers(),
-                                    proxies=self.__proxies, verify=self.__certificate_path)
-        if response.status_code != 200:
-            return CheckException(response.text)
-        else:
-            return loads(response.text)
-
-    def search_users(self, nickname: str, start: int = 0, size: int = 25):
         response = self._session.get(
-            url=f"{self.__endpoint}/s/user-profile?type=name&q={nickname}&start={start}&size={size}",
-            headers=self._parse_headers(), proxies=self.__proxies, verify=self.__certificate_path)
+            url=f"{self.__endpoint}/s/block/" +
+                f"full-list?start={start}&size={size}",
+            headers=self._parse_headers(),
+            proxies=self.__proxies,
+            verify=self.__certificate_path
+        )
         if response.status_code != 200:
             return CheckException(response.text)
-        else:
-            return UserProfileList(loads(response.text)["userProfileList"]).UserProfileList
 
-    def get_saved_blogs(self, start: int = 0, size: int = 25):
-        response = self._session.get(url=f"{self.__endpoint}/s/bookmark?start={start}&size={size}",
-                                    headers=self._parse_headers(), proxies=self.__proxies, verify=self.__certificate_path)
+        return loads(response.text)["blockerUidList"]
+
+    def search_users(
+            self,
+            nickname: str,
+            start: int = 0,
+            size: int = 25
+    ) -> UserProfileList:
+        response = self._session.get(
+            url=f"{self.__endpoint}/s/user-profile?" +
+                f"type=name&q={nickname}&start={start}&size={size}",
+            headers=self._parse_headers(),
+            proxies=self.__proxies,
+            verify=self.__certificate_path
+        )
         if response.status_code != 200:
             return CheckException(response.text)
-        else:
-            return UserSavedBlogs(loads(response.text)["bookmarkList"]).UserSavedBlogs
 
-    def get_leaderboard_info(self, type: str, start: int = 0, size: int = 25):
-        if "24" in type or "hour" in type:
+        return UserProfileList(
+            loads(response.text)["userProfileList"]
+        ).UserProfileList
+
+    def get_saved_blogs(
+            self,
+            start: int = 0,
+            size: int = 25
+    ) -> UserSavedBlogs:
+        response = self._session.get(
+            url=f"{self.__endpoint}/s/bookmark?start={start}&size={size}",
+            headers=self._parse_headers(),
+            proxies=self.__proxies,
+            verify=self.__certificate_path
+        )
+        if response.status_code != 200:
+            return CheckException(response.text)
+
+        return UserSavedBlogs(
+            loads(response.text)["bookmarkList"]
+        ).UserSavedBlogs
+
+    def get_leaderboard_info(
+            self,
+            type: LeaderboardType,
+            start: int = 0,
+            size: int = 25
+    ) -> UserProfileList:
+        if LeaderboardType.LAST_DAY == type:
             response = self._session.get(
-                url=f"{self.__cross_point}/community/leaderboard?rankingType=1&start={start}&size={size}",
-                headers=self._parse_headers(), proxies=self.__proxies, verify=self.__certificate_path)
-        elif "7" in type or "day" in type:
+                url=f"{self.__cross_point}/community/leaderboard" +
+                    f"?rankingType=1&start={start}&size={size}",
+                headers=self._parse_headers(),
+                proxies=self.__proxies,
+                verify=self.__certificate_path
+            )
+        elif LeaderboardType.LAST_WEEK == type:
             response = self._session.get(
-                url=f"{self.__cross_point}/community/leaderboard?rankingType=2&start={start}&size={size}",
-                headers=self._parse_headers(), proxies=self.__proxies, verify=self.__certificate_path)
-        elif "rep" in type:
+                url=f"{self.__cross_point}/community/leaderboard" +
+                    f"?rankingType=2&start={start}&size={size}",
+                headers=self._parse_headers(),
+                proxies=self.__proxies,
+                verify=self.__certificate_path
+            )
+        elif LeaderboardType.REP == type:
             response = self._session.get(
-                url=f"{self.__cross_point}/community/leaderboard?rankingType=3&start={start}&size={size}",
-                headers=self._parse_headers(), proxies=self.__proxies, verify=self.__certificate_path)
-        elif "check" in type:
-            response = self._session.get(url=f"{self.__cross_point}/community/leaderboard?rankingType=4",
-                                        headers=self._parse_headers(), proxies=self.__proxies, verify=self.__certificate_path)
-        elif "quiz" in type:
+                url=f"{self.__cross_point}/community/leaderboard" +
+                    f"?rankingType=3&start={start}&size={size}",
+                headers=self._parse_headers(),
+                proxies=self.__proxies,
+                verify=self.__certificate_path
+            )
+        elif LeaderboardType.CHECK == type:
             response = self._session.get(
-                url=f"{self.__cross_point}/community/leaderboard?rankingType=5&start={start}&size={size}",
-                headers=self._parse_headers(), proxies=self.__proxies, verify=self.__certificate_path)
+                url=f"{self.__cross_point}/community/leaderboard" +
+                    "?rankingType=4",
+                headers=self._parse_headers(),
+                proxies=self.__proxies,
+                verify=self.__certificate_path
+            )
+        else:
+            response = self._session.get(
+                url=f"{self.__cross_point}/community/leaderboard" +
+                    f"?rankingType=5&start={start}&size={size}",
+                headers=self._parse_headers(),
+                proxies=self.__proxies,
+                verify=self.__certificate_path
+            )
         if response.status_code != 200:
             return CheckException(response.text)
-        else:
-            return UserProfileList(loads(response.text)["userProfileList"]).UserProfileList
 
-    def get_wiki_info(self, wikiId: str):
-        response = self._session.get(url=f"{self.__endpoint}/s/item/{wikiId}", headers=self._parse_headers(),
-                                    proxies=self.__proxies, verify=self.__certificate_path)
+        return UserProfileList(
+            loads(response.text)["userProfileList"]
+        ).UserProfileList
+
+    def get_wiki_info(self, wikiId: str) -> GetWikiInfo:
+        response = self._session.get(
+            url=f"{self.__endpoint}/s/item/{wikiId}",
+            headers=self._parse_headers(),
+            proxies=self.__proxies,
+            verify=self.__certificate_path
+        )
         if response.status_code != 200:
             return CheckException(response.text)
-        else:
-            return GetWikiInfo(loads(response.text)).GetWikiInfo
 
-    def get_recent_wiki_items(self, start: int = 0, size: int = 25):
-        response = self._session.get(url=f"{self.__endpoint}/s/item?type=catalog-all&start={start}&size={size}",
-                                    headers=self._parse_headers(), proxies=self.__proxies, verify=self.__certificate_path)
+        return GetWikiInfo(loads(response.text)).GetWikiInfo
+
+    def get_recent_wiki_items(
+            self,
+            start: int = 0,
+            size: int = 25
+    ) -> WikiList:
+        response = self._session.get(
+            url=f"{self.__endpoint}/s/item?type=" +
+                f"catalog-all&start={start}&size={size}",
+            headers=self._parse_headers(),
+            proxies=self.__proxies,
+            verify=self.__certificate_path
+        )
         if response.status_code != 200:
             return CheckException(response.text)
-        else:
-            return WikiList(loads(response.text)["itemList"]).WikiList
 
-    def get_wiki_categories(self, start: int = 0, size: int = 25):
-        response = self._session.get(url=f"{self.__endpoint}/s/item-category?start={start}&size={size}",
-                                    headers=self._parse_headers(), proxies=self.__proxies, verify=self.__certificate_path)
+        return WikiList(loads(response.text)["itemList"]).WikiList
+
+    def get_wiki_categories(
+            self,
+            start: int = 0,
+            size: int = 25
+    ) -> WikiCategoryList:
+        response = self._session.get(
+            url=f"{self.__endpoint}/s/item-category?start={start}&size={size}",
+            headers=self._parse_headers(),
+            proxies=self.__proxies,
+            verify=self.__certificate_path
+        )
         if response.status_code != 200:
             return CheckException(response.text)
-        else:
-            return WikiCategoryList(loads(response.text)["itemCategoryList"]).WikiCategoryList
 
-    def get_wiki_category(self, categoryId: str, start: int = 0, size: int = 25):
-        response = self._session.get(url=f"{self.__endpoint}/s/item-category/{categoryId}?start={start}&size={size}",
-                                    headers=self._parse_headers(), proxies=self.__proxies, verify=self.__certificate_path)
+        return WikiCategoryList(
+            loads(response.text)["itemCategoryList"]
+        ).WikiCategoryList
+
+    def get_wiki_category(
+            self,
+            categoryId: str,
+            start: int = 0,
+            size: int = 25
+    ) -> WikiCategory:
+        response = self._session.get(
+            url=f"{self.__endpoint}/s/item-category" +
+                f"/{categoryId}?start={start}&size={size}s",
+            headers=self._parse_headers(),
+            proxies=self.__proxies,
+            verify=self.__certificate_path
+        )
         if response.status_code != 200:
             return CheckException(response.text)
-        else:
-            return WikiCategory(loads(response.text)).WikiCategory
 
-    def get_tipped_users(self, blogId: str = None, wikiId: str = None, quizId: str = None, fileId: str = None,
-                         chatId: str = None, start: int = 0, size: int = 25):
+        return WikiCategory(loads(response.text)).WikiCategory
+
+    def get_tipped_users(
+            self,
+            blogId: str = None,
+            wikiId: str = None,
+            quizId: str = None,
+            chatId: str = None,
+            start: int = 0,
+            size: int = 25
+    ) -> TippedUsersSummary:
+        response = None
+
         if blogId or quizId:
-            if quizId is not None: blogId = quizId
+            if quizId:
+                blogId = quizId
             response = self._session.get(
-                url=f"{self.__endpoint}/s/blog/{blogId}/tipping/tipped-users-summary?start={start}&size={size}",
-                headers=self._parse_headers(), proxies=self.__proxies, verify=self.__certificate_path)
+                url=f"{self.__endpoint}/s/blog/{blogId}/tipping/" +
+                    f"tipped-users-summary?start={start}&size={size}",
+                headers=self._parse_headers(),
+                proxies=self.__proxies,
+                verify=self.__certificate_path
+            )
         elif wikiId:
             response = self._session.get(
-                url=f"{self.__endpoint}/s/item/{wikiId}/tipping/tipped-users-summary?start={start}&size={size}",
-                headers=self._parse_headers(), proxies=self.__proxies, verify=self.__certificate_path)
+                url=f"{self.__endpoint}/s/item/{wikiId}/tipping/" +
+                    f"tipped-users-summary?start={start}&size={size}",
+                headers=self._parse_headers(),
+                proxies=self.__proxies,
+                verify=self.__certificate_path
+            )
         elif chatId:
             response = self._session.get(
-                url=f"{self.__endpoint}/s/chat/thread/{chatId}/tipping/tipped-users-summary?start={start}&size={size}",
-                headers=self._parse_headers(), proxies=self.__proxies, verify=self.__certificate_path)
-        elif fileId:
-            response = self._session.get(
-                url=f"{self.__endpoint}/s/shared-folder/files/{fileId}/tipping/tipped-users-summary?start={start}&size={size}",
-                headers=self._parse_headers(), proxies=self.__proxies, verify=self.__certificate_path)
+                url=f"{self.__endpoint}/s/chat/thread/{chatId}/" +
+                    f"tipping/tipped-users-summary?start={start}&size={size}",
+                headers=self._parse_headers(),
+                proxies=self.__proxies,
+                verify=self.__certificate_path
+            )
         else:
             raise SpecifyType()
+
         if response.status_code != 200:
             return CheckException(response.text)
-        else:
-            return TippedUsersSummary(loads(response.text)).TippedUsersSummary
 
-    def get_chat_threads(self, start: int = 0, size: int = 25):
+        return TippedUsersSummary(loads(response.text)).TippedUsersSummary
+
+    def get_chat_threads(self, start: int = 0, size: int = 25) -> ThreadList:
         """
         List of Chats the account is in.
 
@@ -2542,18 +2704,29 @@ class SubClient(Client):
             - *size* : Size of the list.
 
         **Returns**
-            - **Success** : :meth:`Chat List <aminodorksfix.lib.util.ThreadList>`
+            - **Success** : :meth:`Chat List
+                            <aminodorksfix.lib.util.ThreadList>`
 
             - **Fail** : :meth:`Exceptions <aminodorksfix.lib.util.exceptions>`
         """
-        response = self._session.get(url=f"{self.__endpoint}/s/chat/thread?type=joined-me&start={start}&size={size}",
-                                    headers=self._parse_headers(), proxies=self.__proxies, verify=self.__certificate_path)
+        response = self._session.get(
+            url=f"{self.__endpoint}/s/chat/thread?type=joined-me" +
+                f"&start={start}&size={size}",
+            headers=self._parse_headers(),
+            proxies=self.__proxies,
+            verify=self.__certificate_path
+        )
         if response.status_code != 200:
             return CheckException(response.text)
-        else:
-            return ThreadList(loads(response.text)["threadList"]).ThreadList
 
-    def get_public_chat_threads(self, type: str = "recommended", start: int = 0, size: int = 25):
+        return ThreadList(loads(response.text)["threadList"]).ThreadList
+
+    def get_public_chat_threads(
+            self,
+            type: str = "recommended",
+            start: int = 0,
+            size: int = 25
+    ) -> ThreadList:
         """
         List of Public Chats of the Community.
 
@@ -2562,19 +2735,24 @@ class SubClient(Client):
             - *size* : Size of the list.
 
         **Returns**
-            - **Success** : :meth:`Chat List <aminodorksfix.lib.util.ThreadList>`
+            - **Success** : :meth:`Chat List
+                            <aminodorksfix.lib.util.ThreadList>`
 
             - **Fail** : :meth:`Exceptions <aminodorksfix.lib.util.exceptions>`
         """
         response = self._session.get(
-            url=f"{self.__endpoint}/s/chat/thread?type=public-all&filterType={type}&start={start}&size={size}",
-            headers=self._parse_headers(), proxies=self.__proxies, verify=self.__certificate_path)
+            url=f"{self.__endpoint}/s/chat/thread?type=public-" +
+                f"all&filterType={type}&start={start}&size={size}",
+            headers=self._parse_headers(),
+            proxies=self.__proxies,
+            verify=self.__certificate_path
+        )
         if response.status_code != 200:
             return CheckException(response.text)
-        else:
-            return ThreadList(loads(response.text)["threadList"]).ThreadList
 
-    def get_chat_thread(self, chatId: str):
+        return ThreadList(loads(response.text)["threadList"]).ThreadList
+
+    def get_chat_thread(self, chatId: str) -> Thread:
         """
         Get the Chat Object from an Chat ID.
 
@@ -2586,14 +2764,23 @@ class SubClient(Client):
 
             - **Fail** : :meth:`Exceptions <aminodorksfix.lib.util.exceptions>`
         """
-        response = self._session.get(url=f"{self.__endpoint}/s/chat/thread/{chatId}", headers=self._parse_headers(),
-                                    proxies=self.__proxies, verify=self.__certificate_path)
+        response = self._session.get(
+            url=f"{self.__endpoint}/s/chat/thread/{chatId}",
+            headers=self._parse_headers(),
+            proxies=self.__proxies,
+            verify=self.__certificate_path
+        )
         if response.status_code != 200:
             return CheckException(response.text)
-        else:
-            return Thread(loads(response.text)["thread"]).Thread
 
-    def get_chat_messages(self, chatId: str, size: int = 25, pageToken: str = None):
+        return Thread(loads(response.text)["thread"]).Thread
+
+    def get_chat_messages(
+            self,
+            chatId: str,
+            size: int = 25,
+            pageToken: str = None
+    ) -> MessageList:
         """
         List of Messages from an Chat.
 
@@ -2603,24 +2790,35 @@ class SubClient(Client):
             - *pageToken* : Next Page Token.
 
         **Returns**
-            - **Success** : :meth:`Message List <aminodorksfix.lib.util.MessageList>`
+            - **Success** : :meth:`Message List
+                            <aminodorksfix.lib.util.MessageList>`
 
             - **Fail** : :meth:`Exceptions <aminodorksfix.lib.util.exceptions>`
         """
 
         if pageToken is not None:
-            url = url=f"{self.__endpoint}/s/chat/thread/{chatId}/message?v=2&pagingType=t&pageToken={pageToken}&size={size}"
+            url = (
+                f"{self.__endpoint}/s/chat/thread/{chatId}/message" +
+                f"?v=2&pagingType=t&pageToken={pageToken}&size={size}"
+            )
         else:
-            url = url=f"{self.__endpoint}/s/chat/thread/{chatId}/message?v=2&pagingType=t&size={size}"
+            url = (
+                f"{self.__endpoint}/s/chat/thread/{chatId}/message" +
+                f"?v=2&pagingType=t&size={size}"
+            )
 
-        response = self._session.get(url, headers=self._parse_headers(), proxies=self.__proxies,
-                                    verify=self.__certificate_path)
+        response = self._session.get(
+            url,
+            headers=self._parse_headers(),
+            proxies=self.__proxies,
+            verify=self.__certificate_path
+        )
         if response.status_code != 200:
             return CheckException(response.text)
-        else:
-            return GetMessages(loads(response.text)).GetMessages
 
-    def get_message_info(self, chatId: str, messageId: str):
+        return GetMessages(loads(response.text)).GetMessages
+
+    def get_message_info(self, chatId: str, messageId: str) -> Message:
         """
         Information of an Message from an Chat.
 
@@ -2629,102 +2827,174 @@ class SubClient(Client):
             - **message** : ID of the Message.
 
         **Returns**
-            - **Success** : :meth:`Message Object <aminodorksfix.lib.util.Message>`
+            - **Success** : :meth:`Message Object
+                            <aminodorksfix.lib.util.Message>`
 
             - **Fail** : :meth:`Exceptions <aminodorksfix.lib.util.exceptions>`
         """
-        response = self._session.get(url=f"{self.__endpoint}/s/chat/thread/{chatId}/message/{messageId}",
-                                    headers=self._parse_headers(), proxies=self.__proxies, verify=self.__certificate_path)
-        if response.status_code != 200:
-            return CheckException(response.text)
-        else:
-            return Message(loads(response.text)["message"]).Message
-
-    def get_blog_info(self, blogId: str = None, wikiId: str = None, quizId: str = None, fileId: str = None):
-        if blogId or quizId:
-            if quizId is not None: blogId = quizId
-            response = self._session.get(url=f"{self.__endpoint}/s/blog/{blogId}", headers=self._parse_headers(),
-                                        proxies=self.__proxies, verify=self.__certificate_path)
-            if response.status_code != 200:
-                return CheckException(response.text)
-            else:
-                return GetBlogInfo(loads(response.text)).GetBlogInfo
-
-        elif wikiId:
-            response = self._session.get(url=f"{self.__endpoint}/s/item/{wikiId}", headers=self._parse_headers(),
-                                        proxies=self.__proxies, verify=self.__certificate_path)
-            if response.status_code != 200:
-                return CheckException(response.text)
-            else:
-                return GetWikiInfo(loads(response.text)).GetWikiInfo
-
-        elif fileId:
-            response = self._session.get(url=f"{self.__endpoint}/s/shared-folder/files/{fileId}",
-                                        headers=self._parse_headers(), proxies=self.__proxies, verify=self.__certificate_path)
-            if response.status_code != 200:
-                return CheckException(response.text)
-            else:
-                return SharedFolderFile(loads(response.text)["file"]).SharedFolderFile
-
-        else:
-            raise SpecifyType()
-
-    def get_blog_comments(self, blogId: str = None, wikiId: str = None, quizId: str = None, fileId: str = None,
-                          sorting: str = "newest", start: int = 0, size: int = 25):
-        if sorting == "newest":
-            sorting = "newest"
-        elif sorting == "oldest":
-            sorting = "oldest"
-        elif sorting == "top":
-            sorting = "vote"
-
-        if blogId or quizId:
-            if quizId is not None: blogId = quizId
-            response = self._session.get(
-                url=f"{self.__endpoint}/s/blog/{blogId}/comment?sort={sorting}&start={start}&size={size}",
-                headers=self._parse_headers(), proxies=self.__proxies, verify=self.__certificate_path)
-        elif wikiId:
-            response = self._session.get(
-                url=f"{self.__endpoint}/s/item/{wikiId}/comment?sort={sorting}&start={start}&size={size}",
-                headers=self._parse_headers(), proxies=self.__proxies, verify=self.__certificate_path)
-        elif fileId:
-            response = self._session.get(
-                url=f"{self.__endpoint}/s/shared-folder/files/{fileId}/comment?sort={sorting}&start={start}&size={size}",
-                headers=self._parse_headers(), proxies=self.__proxies, verify=self.__certificate_path)
-        else:
-            raise SpecifyType()
-
-        if response.status_code != 200:
-            return CheckException(response.text)
-        else:
-            return CommentList(loads(response.text)["commentList"]).CommentList
-
-    def get_blog_categories(self, size: int = 25):
-        response = self._session.get(url=f"{self.__endpoint}/s/blog-category?size={size}",
-                                    headers=self._parse_headers(), proxies=self.__proxies, verify=self.__certificate_path)
-        if response.status_code != 200:
-            return CheckException(response.text)
-        else:
-            return BlogCategoryList(loads(response.text)["blogCategoryList"]).BlogCategoryList
-
-    def get_blogs_by_category(self, categoryId: str, start: int = 0, size: int = 25):
         response = self._session.get(
-            url=f"{self.__endpoint}/s/blog-category/{categoryId}/blog-list?start={start}&size={size}",
-            headers=self._parse_headers(), proxies=self.__proxies, verify=self.__certificate_path)
+            url=f"{self.__endpoint}/s/chat/thread/{chatId}" +
+                f"/message/{messageId}",
+            headers=self._parse_headers(),
+            proxies=self.__proxies,
+            verify=self.__certificate_path
+        )
         if response.status_code != 200:
             return CheckException(response.text)
-        else:
-            return BlogList(loads(response.text)["blogList"]).BlogList
 
-    def get_quiz_rankings(self, quizId: str, start: int = 0, size: int = 25):
-        response = self._session.get(url=f"{self.__endpoint}/s/blog/{quizId}/quiz/result?start={start}&size={size}",
-                                    headers=self._parse_headers(), proxies=self.__proxies, verify=self.__certificate_path)
+        return Message(loads(response.text)["message"]).Message
+
+    def get_blog_info(
+            self,
+            blogId: str = None,
+            wikiId: str = None,
+            quizId: str = None,
+            fileId: str = None
+    ) -> SharedFolderFile | GetBlogInfo | GetWikiInfo:
+        if blogId or quizId:
+            if quizId:
+                blogId = quizId
+            response = self._session.get(
+                url=f"{self.__endpoint}/s/blog/{blogId}",
+                headers=self._parse_headers(),
+                proxies=self.__proxies,
+                verify=self.__certificate_path
+            )
+            if response.status_code != 200:
+                return CheckException(response.text)
+            return GetBlogInfo(loads(response.text)).GetBlogInfo
+
+        elif wikiId:
+            response = self._session.get(
+                url=f"{self.__endpoint}/s/item/{wikiId}",
+                headers=self._parse_headers(),
+                proxies=self.__proxies,
+                verify=self.__certificate_path
+            )
+            if response.status_code != 200:
+                return CheckException(response.text)
+            return GetWikiInfo(loads(response.text)).GetWikiInfo
+
+        elif fileId:
+            response = self._session.get(
+                url=f"{self.__endpoint}/s/shared-folder/files/{fileId}",
+                headers=self._parse_headers(),
+                proxies=self.__proxies,
+                verify=self.__certificate_path
+            )
+            if response.status_code != 200:
+                return CheckException(response.text)
+            return SharedFolderFile(
+                loads(response.text)["file"]
+            ).SharedFolderFile
+
+        raise SpecifyType()
+
+    def get_blog_comments(
+            self,
+            blogId: str = None,
+            wikiId: str = None,
+            quizId: str = None,
+            fileId: str = None,
+            sorting: str = "newest",
+            start: int = 0,
+            size: int = 25
+    ) -> CommentList:
+        sorting_type = COMMENTS_SORTING_MAP.get(sorting)
+        if not sorting_type:
+            raise WrongType(sorting)
+
+        if blogId or quizId:
+            if quizId:
+                blogId = quizId
+            response = self._session.get(
+                url=f"{self.__endpoint}/s/blog/{blogId}/comment?" +
+                    f"sort={sorting_type}&start={start}&size={size}",
+                headers=self._parse_headers(),
+                proxies=self.__proxies,
+                verify=self.__certificate_path
+            )
+        elif wikiId:
+            response = self._session.get(
+                url=f"{self.__endpoint}/s/item/{wikiId}/comment?" +
+                    f"sort={sorting_type}&start={start}&size={size}",
+                headers=self._parse_headers(),
+                proxies=self.__proxies,
+                verify=self.__certificate_path
+            )
+        elif fileId:
+            response = self._session.get(
+                url=f"{self.__endpoint}/s/shared-folder/files/{fileId}" +
+                    f"/comment?sort={sorting_type}&start={start}&size={size}",
+                headers=self._parse_headers(),
+                proxies=self.__proxies,
+                verify=self.__certificate_path
+            )
+        else:
+            raise SpecifyType()
+
         if response.status_code != 200:
             return CheckException(response.text)
-        else:
-            return QuizRankings(loads(response.text)).QuizRankings
 
-    def get_wall_comments(self, userId: str, sorting: str, start: int = 0, size: int = 25):
+        return CommentList(loads(response.text)["commentList"]).CommentList
+
+    def get_blog_categories(self, size: int = 25) -> BlogCategoryList:
+        response = self._session.get(
+            url=f"{self.__endpoint}/s/blog-category?size={size}",
+            headers=self._parse_headers(),
+            proxies=self.__proxies,
+            verify=self.__certificate_path
+        )
+        if response.status_code != 200:
+            return CheckException(response.text)
+
+        return BlogCategoryList(
+            loads(response.text)["blogCategoryList"]
+        ).BlogCategoryList
+
+    def get_blogs_by_category(
+            self,
+            categoryId: str,
+            start: int = 0,
+            size: int = 25
+    ) -> BlogList:
+        response = self._session.get(
+            url=f"{self.__endpoint}/s/blog-category/{categoryId}" +
+                f"/blog-list?start={start}&size={size}",
+            headers=self._parse_headers(),
+            proxies=self.__proxies,
+            verify=self.__certificate_path
+        )
+        if response.status_code != 200:
+            return CheckException(response.text)
+
+        return BlogList(loads(response.text)["blogList"]).BlogList
+
+    def get_quiz_rankings(
+            self,
+            quizId: str,
+            start: int = 0,
+            size: int = 25
+    ) -> QuizRankings:
+        response = self._session.get(
+            url=f"{self.__endpoint}/s/blog/{quizId}" +
+                f"/quiz/result?start={start}&size={size}",
+            headers=self._parse_headers(),
+            proxies=self.__proxies,
+            verify=self.__certificate_path
+        )
+        if response.status_code != 200:
+            return CheckException(response.text)
+
+        return QuizRankings(loads(response.text)).QuizRankings
+
+    def get_wall_comments(
+            self,
+            userId: str,
+            sorting: str,
+            start: int = 0,
+            size: int = 25
+    ) -> CommentList:
         """
         List of Wall Comments of an User.
 
@@ -2736,200 +3006,286 @@ class SubClient(Client):
             - *size* : Size of the list.
 
         **Returns**
-            - **Success** : :meth:`Comments List <aminodorksfix.lib.util.CommentList>`
+            - **Success** : :meth:`Comments List
+                            <aminodorksfix.lib.util.CommentList>`
 
             - **Fail** : :meth:`Exceptions <aminodorksfix.lib.util.exceptions>`
         """
-        if sorting == "newest":
-            sorting = "newest"
-        elif sorting == "oldest":
-            sorting = "oldest"
-        elif sorting == "top":
-            sorting = "vote"
-        else:
+        sorting_type = COMMENTS_SORTING_MAP.get(sorting)
+        if not sorting_type:
             raise WrongType(sorting)
 
         response = self._session.get(
-            url=f"{self.__endpoint}/s/user-profile/{userId}/comment?sort={sorting}&start={start}&size={size}",
-            headers=self._parse_headers(), proxies=self.__proxies, verify=self.__certificate_path)
+            url=f"{self.__endpoint}/s/user-profile/{userId}" +
+                f"/comment?sort={sorting}&start={start}&size={size}",
+            headers=self._parse_headers(),
+            proxies=self.__proxies,
+            verify=self.__certificate_path
+        )
         if response.status_code != 200:
             return CheckException(response.text)
-        else:
-            return CommentList(loads(response.text)["commentList"]).CommentList
 
-    def get_recent_blogs(self, pageToken: str = None, start: int = 0, size: int = 25):
-        if pageToken is not None:
-            url = url=f"{self.__endpoint}/s/feed/blog-all?pagingType=t&pageToken={pageToken}&size={size}"
-        else:
-            url = url=f"{self.__endpoint}/s/feed/blog-all?pagingType=t&start={start}&size={size}"
+        return CommentList(loads(response.text)["commentList"]).CommentList
 
-        response = self._session.get(url, headers=self._parse_headers(), proxies=self.__proxies,
-                                    verify=self.__certificate_path)
-        if response.status_code != 200:
-            return CheckException(response.text)
+    def get_recent_blogs(
+            self,
+            pageToken: str = None,
+            start: int = 0,
+            size: int = 25
+    ) -> BlogList:
+        if pageToken:
+            url = (
+                f"{self.__endpoint}/s/feed/blog-all?pagingType=" +
+                f"t&pageToken={pageToken}&size={size}"
+            )
         else:
-            return RecentBlogs(loads(response.text)).RecentBlogs
+            url = (
+                f"{self.__endpoint}/s/feed/blog-all?pagingType=" +
+                f"t&start={start}&size={size}"
+            )
 
-    def get_chat_users(self, chatId: str, start: int = 0, size: int = 25):
         response = self._session.get(
-            url=f"{self.__endpoint}/s/chat/thread/{chatId}/member?start={start}&size={size}&type=default&cv=1.2",
-            headers=self._parse_headers(), proxies=self.__proxies, verify=self.__certificate_path)
+            url,
+            headers=self._parse_headers(),
+            proxies=self.__proxies,
+            verify=self.__certificate_path
+        )
         if response.status_code != 200:
             return CheckException(response.text)
-        else:
-            return UserProfileList(loads(response.text)["memberList"]).UserProfileList
 
-    def get_notifications(self, start: int = 0, size: int = 25):
-        response = self._session.get(url=f"{self.__endpoint}/s/notification?pagingType=t&start={start}&size={size}",
-                                    headers=self._parse_headers(), proxies=self.__proxies, verify=self.__certificate_path)
+        return RecentBlogs(loads(response.text)).RecentBlogs
+
+    def get_chat_users(
+            self,
+            chatId: str,
+            start: int = 0,
+            size: int = 25
+    ) -> UserProfileList:
+        response = self._session.get(
+            url=f"{self.__endpoint}/s/chat/thread/{chatId}/member" +
+                f"?start={start}&size={size}&type=default&cv=1.2",
+            headers=self._parse_headers(),
+            proxies=self.__proxies,
+            verify=self.__certificate_path
+        )
         if response.status_code != 200:
             return CheckException(response.text)
-        else:
-            return NotificationList(loads(response.text)["notificationList"]).NotificationList
 
-    def get_notices(self, start: int = 0, size: int = 25):
+        return UserProfileList(
+            loads(response.text)["memberList"]
+        ).UserProfileList
+
+    def get_notifications(
+            self,
+            start: int = 0,
+            size: int = 25
+    ) -> NotificationList:
+        response = self._session.get(
+            url=f"{self.__endpoint}/s/notification?" +
+                f"pagingType=t&start={start}&size={size}",
+            headers=self._parse_headers(),
+            proxies=self.__proxies,
+            verify=self.__certificate_path
+        )
+        if response.status_code != 200:
+            return CheckException(response.text)
+
+        return NotificationList(
+            loads(response.text)["notificationList"]
+        ).NotificationList
+
+    def get_notices(
+            self,
+            start: int = 0,
+            size: int = 25
+    ) -> NoticeList:
         """
         :param start: Start of the List (Start: 0)
         :param size: Amount of Notices to Show
         :return: Notices List
         """
         response = self._session.get(
-            url=f"{self.__endpoint}/s/notice?type=usersV2&status=1&start={start}&size={size}",
-            headers=self._parse_headers(), proxies=self.__proxies, verify=self.__certificate_path)
+            url=f"{self.__endpoint}/s/notice?type=usersV2" +
+                f"&status=1&start={start}&size={size}",
+            headers=self._parse_headers(),
+            proxies=self.__proxies,
+            verify=self.__certificate_path
+        )
         if response.status_code != 200:
             return CheckException(response.text)
-        else:
-            return NoticeList(loads(response.text)["noticeList"]).NoticeList
 
-    def get_sticker_pack_info(self, sticker_pack_id: str):
+        return NoticeList(loads(response.text)["noticeList"]).NoticeList
+
+    def get_sticker_pack_info(self, sticker_pack_id: str) -> StickerCollection:
         response = self._session.get(
-            url=f"{self.__endpoint}/s/sticker-collection/{sticker_pack_id}?includeStickers=true",
-            headers=self._parse_headers(), proxies=self.__proxies, verify=self.__certificate_path)
+            url=f"{self.__endpoint}/s/sticker-collection" +
+                f"/{sticker_pack_id}?includeStickers=true",
+            headers=self._parse_headers(),
+            proxies=self.__proxies,
+            verify=self.__certificate_path
+        )
         if response.status_code != 200:
             return CheckException(response.text)
-        else:
-            return StickerCollection(loads(response.text)["stickerCollection"]).StickerCollection
 
-    def get_sticker_packs(self):
+        return StickerCollection(
+            loads(response.text)["stickerCollection"]
+        ).StickerCollection
+
+    def get_sticker_packs(self) -> StickerCollection:
         response = self._session.get(
-            url=f"{self.__endpoint}/s/sticker-collection?includeStickers=false&type=my-active-collection",
-            headers=self._parse_headers(), proxies=self.__proxies, verify=self.__certificate_path)
+            url=f"{self.__endpoint}/s/sticker-collection?includeStickers" +
+                "=false&type=my-active-collection",
+                headers=self._parse_headers(),
+                proxies=self.__proxies,
+                verify=self.__certificate_path
+        )
         if response.status_code != 200:
             return CheckException(response.text)
-        return StickerCollection(loads(response.text)["stickerCollection"]).StickerCollection
 
-    # TODO : Finish this
-    def get_store_chat_bubbles(self, start: int = 0, size: int = 25):
+        return StickerCollection(
+            loads(response.text)["stickerCollection"]
+        ).StickerCollection
+
+    def get_community_stickers(self) -> CommunityStickerCollection:
         response = self._session.get(
-            url=f"{self.__endpoint}/s/store/items?sectionGroupId=chat-bubble&start={start}&size={size}",
-            headers=self._parse_headers(), proxies=self.__proxies, verify=self.__certificate_path)
+            url=f"{self.__endpoint}/s/sticker-collection?" +
+                "type=community-shared",
+            headers=self._parse_headers(),
+            proxies=self.__proxies,
+            verify=self.__certificate_path
+        )
         if response.status_code != 200:
             return CheckException(response.text)
-        else:
-            response = loads(response.text)
-            del response["api:message"], response["api:statuscode"], response["api:duration"], response["api:timestamp"]
-            return response
 
-    # TODO : Finish this
-    def get_store_stickers(self, start: int = 0, size: int = 25):
+        return CommunityStickerCollection(
+            loads(response.text)
+        ).CommunityStickerCollection
+
+    def get_sticker_collection(self, collectionId: str) -> StickerCollection:
         response = self._session.get(
-            url=f"{self.__endpoint}/s/store/items?sectionGroupId=sticker&start={start}&size={size}",
-            headers=self._parse_headers(), proxies=self.__proxies, verify=self.__certificate_path)
+            url=f"{self.__endpoint}/s/sticker-collection" +
+                f"/{collectionId}?includeStickers=true",
+            headers=self._parse_headers(),
+            proxies=self.__proxies,
+            verify=self.__certificate_path
+        )
         if response.status_code != 200:
             return CheckException(response.text)
-        else:
-            response = loads(response.text)
-            del response["api:message"], response["api:statuscode"], response["api:duration"], response["api:timestamp"]
-            return response
 
-    def get_community_stickers(self):
-        response = self._session.get(url=f"{self.__endpoint}/s/sticker-collection?type=community-shared",
-                                    headers=self._parse_headers(), proxies=self.__proxies, verify=self.__certificate_path)
-        if response.status_code != 200:
-            return CheckException(response.text)
-        else:
-            return CommunityStickerCollection(loads(response.text)).CommunityStickerCollection
+        return StickerCollection(
+            loads(response.text)["stickerCollection"]
+        ).StickerCollection
 
-    def get_sticker_collection(self, collectionId: str):
+    def get_shared_folder_info(self) -> GetSharedFolderInfo:
         response = self._session.get(
-            url=f"{self.__endpoint}/s/sticker-collection/{collectionId}?includeStickers=true",
-            headers=self._parse_headers(), proxies=self.__proxies, verify=self.__certificate_path)
+            url=f"{self.__endpoint}/s/shared-folder/stats",
+            headers=self._parse_headers(),
+            proxies=self.__proxies,
+            verify=self.__certificate_path
+        )
         if response.status_code != 200:
             return CheckException(response.text)
-        else:
-            return StickerCollection(loads(response.text)["stickerCollection"]).StickerCollection
 
-    def get_shared_folder_info(self):
-        response = self._session.get(url=f"{self.__endpoint}/s/shared-folder/stats", headers=self._parse_headers(),
-                                    proxies=self.__proxies, verify=self.__certificate_path)
-        if response.status_code != 200:
-            return CheckException(response.text)
-        else:
-            return GetSharedFolderInfo(loads(response.text)["stats"]).GetSharedFolderInfo
+        return GetSharedFolderInfo(
+            loads(response.text)["stats"]
+        ).GetSharedFolderInfo
 
-    def get_shared_folder_files(self, type: str = "latest", start: int = 0, size: int = 25):
+    def get_shared_folder_files(
+            self,
+            type: str = "latest",
+            start: int = 0,
+            size: int = 25
+    ) -> SharedFolderFileList:
         response = self._session.get(
-            url=f"{self.__endpoint}/s/shared-folder/files?type={type}&start={start}&size={size}",
-            headers=self._parse_headers(), proxies=self.__proxies, verify=self.__certificate_path)
+            url=f"{self.__endpoint}/s/shared-folder/files?" +
+                f"type={type}&start={start}&size={size}",
+            headers=self._parse_headers(),
+            proxies=self.__proxies,
+            verify=self.__certificate_path
+        )
         if response.status_code != 200:
             return CheckException(response.text)
-        else:
-            return SharedFolderFileList(loads(response.text)["fileList"]).SharedFolderFileList
 
-    #
-    # MODERATION MENU
-    #
+        return SharedFolderFileList(
+            loads(response.text)["fileList"]
+        ).SharedFolderFileList
 
-    def moderation_history(self, userId: str = None, blogId: str = None, wikiId: str = None, quizId: str = None,
-                           fileId: str = None, size: int = 25):
+    def moderation_history(
+            self,
+            userId: str = None,
+            blogId: str = None,
+            wikiId: str = None,
+            quizId: str = None,
+            fileId: str = None, size: int = 25
+    ) -> AdminLogList:
         if userId:
             response = self._session.get(
-                url=f"{self.__endpoint}/s/admin/operation?objectId={userId}&objectType=0&pagingType=t&size={size}",
-                headers=self._parse_headers(), proxies=self.__proxies, verify=self.__certificate_path)
+                url=f"{self.__endpoint}/s/admin/operation?objectId={userId}" +
+                    f"&objectType=0&pagingType=t&size={size}",
+                headers=self._parse_headers(),
+                proxies=self.__proxies,
+                verify=self.__certificate_path
+            )
         elif blogId:
             response = self._session.get(
-                url=f"{self.__endpoint}/s/admin/operation?objectId={blogId}&objectType=1&pagingType=t&size={size}",
-                headers=self._parse_headers(), proxies=self.__proxies, verify=self.__certificate_path)
+                url=f"{self.__endpoint}/s/admin/operation?objectId={blogId}" +
+                    f"&objectType=1&pagingType=t&size={size}",
+                headers=self._parse_headers(),
+                proxies=self.__proxies,
+                verify=self.__certificate_path
+            )
         elif quizId:
             response = self._session.get(
-                url=f"{self.__endpoint}/s/admin/operation?objectId={quizId}&objectType=1&pagingType=t&size={size}",
-                headers=self._parse_headers(), proxies=self.__proxies, verify=self.__certificate_path)
+                url=f"{self.__endpoint}/s/admin/operation?objectId={quizId}" +
+                    f"&objectType=1&pagingType=t&size={size}",
+                headers=self._parse_headers(),
+                proxies=self.__proxies,
+                verify=self.__certificate_path
+            )
         elif wikiId:
             response = self._session.get(
-                url=f"{self.__endpoint}/s/admin/operation?objectId={wikiId}&objectType=2&pagingType=t&size={size}",
-                headers=self._parse_headers(), proxies=self.__proxies, verify=self.__certificate_path)
+                url=f"{self.__endpoint}/s/admin/operation?objectId={wikiId}" +
+                    f"&objectType=2&pagingType=t&size={size}",
+                headers=self._parse_headers(),
+                proxies=self.__proxies,
+                verify=self.__certificate_path
+            )
         elif fileId:
             response = self._session.get(
-                url=f"{self.__endpoint}/s/admin/operation?objectId={fileId}&objectType=109&pagingType=t&size={size}",
-                headers=self._parse_headers(), proxies=self.__proxies, verify=self.__certificate_path)
+                url=f"{self.__endpoint}/s/admin/operation?objectId={fileId}" +
+                    f"&objectType=109&pagingType=t&size={size}",
+                headers=self._parse_headers(),
+                proxies=self.__proxies,
+                verify=self.__certificate_path
+            )
         else:
-            response = self._session.get(url=f"{self.__endpoint}/s/admin/operation?pagingType=t&size={size}",
-                                        headers=self._parse_headers(), proxies=self.__proxies, verify=self.__certificate_path)
+            response = self._session.get(
+                url=f"{self.__endpoint}/s/admin/operation?" +
+                    f"pagingType=t&size={size}",
+                headers=self._parse_headers(),
+                proxies=self.__proxies,
+                verify=self.__certificate_path
+            )
         if response.status_code != 200:
             return CheckException(response.text)
-        else:
-            return AdminLogList(loads(response.text)["adminLogList"]).AdminLogList
 
-    def feature(self, time: int, userId: str = None, chatId: str = None, blogId: str = None, wikiId: str = None):
-        if chatId:
-            if time == 1: time = 3600
-            if time == 1: time = 7200
-            if time == 1: time = 10800
+        return AdminLogList(loads(response.text)["adminLogList"]).AdminLogList
 
-        else:
-            if time == 1:
-                time = 86400
-            elif time == 2:
-                time = 172800
-            elif time == 3:
-                time = 259200
-            else:
-                raise WrongType(time)
+    def feature(
+            self,
+            time: int,
+            userId: str = None,
+            chatId: str = None,
+            blogId: str = None,
+            wikiId: str = None
+    ) -> Dict[str, Any]:
+        chosen_time = FEATURE_CHAT_TIME_MAP.get(time, 3600) if chatId \
+                    else FEATURE_ITEMS_TIME_MAP.get(time, 86400)
 
         data = {
             "adminOpName": 114,
             "adminOpValue": {
-                "featuredDuration": time
+                "featuredDuration": chosen_time
             },
             "timestamp": int(timestamp() * 1000)
         }
@@ -2937,82 +3293,119 @@ class SubClient(Client):
         if userId:
             data["adminOpValue"] = {"featuredType": 4}
             data = dumps(data)
-            response = self._session.post(url=f"{self.__endpoint}/s/user-profile/{userId}/admin",
-                                         headers=self._parse_headers(data=data), data=data, proxies=self.__proxies,
-                                         verify=self.__certificate_path)
+            response = self._session.post(
+                url=f"{self.__endpoint}/s/user-profile/{userId}/admin",
+                headers=self._parse_headers(data=data),
+                data=data,
+                proxies=self.__proxies,
+                verify=self.__certificate_path
+            )
 
         elif blogId:
             data["adminOpValue"] = {"featuredType": 1}
             data = dumps(data)
-            response = self._session.post(url=f"{self.__endpoint}/s/blog/{blogId}/admin",
-                                         headers=self._parse_headers(data=data), data=data, proxies=self.__proxies,
-                                         verify=self.__certificate_path)
+            response = self._session.post(
+                url=f"{self.__endpoint}/s/blog/{blogId}/admin",
+                headers=self._parse_headers(data=data),
+                data=data,
+                proxies=self.__proxies,
+                verify=self.__certificate_path
+            )
 
         elif wikiId:
             data["adminOpValue"] = {"featuredType": 1}
             data = dumps(data)
-            response = self._session.post(url=f"{self.__endpoint}/s/item/{wikiId}/admin",
-                                         headers=self._parse_headers(data=data), data=data, proxies=self.__proxies,
-                                         verify=self.__certificate_path)
+            response = self._session.post(
+                url=f"{self.__endpoint}/s/item/{wikiId}/admin",
+                headers=self._parse_headers(data=data),
+                data=data,
+                proxies=self.__proxies,
+                verify=self.__certificate_path
+            )
 
         elif chatId:
             data["adminOpValue"] = {"featuredType": 5}
             data = dumps(data)
-            response = self._session.post(url=f"{self.__endpoint}/s/chat/thread/{chatId}/admin",
-                                         headers=self._parse_headers(data=data), data=data, proxies=self.__proxies,
-                                         verify=self.__certificate_path)
-
+            response = self._session.post(
+                url=f"{self.__endpoint}/s/chat/thread/{chatId}/admin",
+                headers=self._parse_headers(data=data),
+                data=data,
+                proxies=self.__proxies,
+                verify=self.__certificate_path
+            )
         else:
             raise SpecifyType()
         if response.status_code != 200:
             return CheckException(response.text)
-        else:
-            return loads(response.text)
 
-    def unfeature(self, userId: str = None, chatId: str = None, blogId: str = None, wikiId: str = None):
-        data = {
+        return loads(response.text)
+
+    def unfeature(
+            self,
+            userId: str = None,
+            chatId: str = None,
+            blogId: str = None,
+            wikiId: str = None
+    ) -> Dict[str, Any]:
+        data = dumps({
             "adminOpName": 114,
-            "adminOpValue": {},
-            "timestamp": int(timestamp() * 1000)
-        }
+            "timestamp": int(timestamp() * 1000),
+            "adminOpValue": {"featuredType": 0}
+        })
 
         if userId:
-            data["adminOpValue"] = {"featuredType": 0}
-            data = dumps(data)
-            response = self._session.post(url=f"{self.__endpoint}/s/user-profile/{userId}/admin",
-                                         headers=self._parse_headers(data=data), data=data, proxies=self.__proxies,
-                                         verify=self.__certificate_path)
+            response = self._session.post(
+                url=f"{self.__endpoint}/s/user-profile/{userId}/admin",
+                headers=self._parse_headers(data=data),
+                data=data,
+                proxies=self.__proxies,
+                verify=self.__certificate_path
+            )
 
         elif blogId:
-            data["adminOpValue"] = {"featuredType": 0}
-            data = dumps(data)
-            response = self._session.post(url=f"{self.__endpoint}/s/blog/{blogId}/admin",
-                                         headers=self._parse_headers(data=data), data=data, proxies=self.__proxies,
-                                         verify=self.__certificate_path)
+            response = self._session.post(
+                url=f"{self.__endpoint}/s/blog/{blogId}/admin",
+                headers=self._parse_headers(data=data),
+                data=data,
+                proxies=self.__proxies,
+                verify=self.__certificate_path
+            )
 
         elif wikiId:
-            data["adminOpValue"] = {"featuredType": 0}
-            data = dumps(data)
-            response = self._session.post(url=f"{self.__endpoint}/s/item/{wikiId}/admin",
-                                         headers=self._parse_headers(data=data), data=data, proxies=self.__proxies,
-                                         verify=self.__certificate_path)
+            response = self._session.post(
+                url=f"{self.__endpoint}/s/item/{wikiId}/admin",
+                headers=self._parse_headers(data=data),
+                data=data,
+                proxies=self.__proxies,
+                verify=self.__certificate_path
+            )
 
         elif chatId:
-            data["adminOpValue"] = {"featuredType": 0}
-            data = dumps(data)
-            response = self._session.post(url=f"{self.__endpoint}/s/chat/thread/{chatId}/admin",
-                                         headers=self._parse_headers(data=data), data=data, proxies=self.__proxies,
-                                         verify=self.__certificate_path)
+            response = self._session.post(
+                url=f"{self.__endpoint}/s/chat/thread/{chatId}/admin",
+                headers=self._parse_headers(data=data),
+                data=data,
+                proxies=self.__proxies,
+                verify=self.__certificate_path
+            )
 
         else:
             raise SpecifyType()
         if response.status_code != 200:
             return CheckException(response.text)
-        else:
-            return loads(response.text)
 
-    def hide(self, userId: str = None, chatId: str = None, blogId: str = None, wikiId: str = None, quizId: str = None,
-             fileId: str = None, reason: str = None):
+        return loads(response.text)
+
+    def hide(
+            self,
+            userId: str = None,
+            chatId: str = None,
+            blogId: str = None,
+            wikiId: str = None,
+            quizId: str = None,
+            fileId: str = None,
+            reason: str = None
+    ) -> Dict[str, Any]:
         data = {
             "adminOpNote": {
                 "content": reason
@@ -3023,59 +3416,90 @@ class SubClient(Client):
         if userId:
             data["adminOpName"] = 18
             data = dumps(data)
-            response = self._session.post(url=f"{self.__endpoint}/s/user-profile/{userId}/admin",
-                                         headers=self._parse_headers(data=data), data=data, proxies=self.__proxies,
-                                         verify=self.__certificate_path)
+            response = self._session.post(
+                url=f"{self.__endpoint}/s/user-profile/{userId}/admin",
+                headers=self._parse_headers(data=data),
+                data=data,
+                proxies=self.__proxies,
+                verify=self.__certificate_path
+            )
 
         elif blogId:
             data["adminOpName"] = 110
             data["adminOpValue"] = 9
             data = dumps(data)
-            response = self._session.post(url=f"{self.__endpoint}/s/blog/{blogId}/admin",
-                                         headers=self._parse_headers(data=data), data=data, proxies=self.__proxies,
-                                         verify=self.__certificate_path)
+            response = self._session.post(
+                url=f"{self.__endpoint}/s/blog/{blogId}/admin",
+                headers=self._parse_headers(data=data),
+                data=data,
+                proxies=self.__proxies,
+                verify=self.__certificate_path
+            )
 
         elif quizId:
             data["adminOpName"] = 110
             data["adminOpValue"] = 9
             data = dumps(data)
-            response = self._session.post(url=f"{self.__endpoint}/s/blog/{quizId}/admin",
-                                         headers=self._parse_headers(data=data), data=data, proxies=self.__proxies,
-                                         verify=self.__certificate_path)
+            response = self._session.post(
+                url=f"{self.__endpoint}/s/blog/{quizId}/admin",
+                headers=self._parse_headers(data=data),
+                data=data,
+                proxies=self.__proxies,
+                verify=self.__certificate_path
+            )
 
         elif wikiId:
             data["adminOpName"] = 110
             data["adminOpValue"] = 9
             data = dumps(data)
-            response = self._session.post(url=f"{self.__endpoint}/s/item/{wikiId}/admin",
-                                         headers=self._parse_headers(data=data), data=data, proxies=self.__proxies,
-                                         verify=self.__certificate_path)
+            response = self._session.post(
+                url=f"{self.__endpoint}/s/item/{wikiId}/admin",
+                headers=self._parse_headers(data=data),
+                data=data,
+                proxies=self.__proxies,
+                verify=self.__certificate_path
+            )
 
         elif chatId:
             data["adminOpName"] = 110
             data["adminOpValue"] = 9
             data = dumps(data)
-            response = self._session.post(url=f"{self.__endpoint}/s/chat/thread/{chatId}/admin",
-                                         headers=self._parse_headers(data=data), data=data, proxies=self.__proxies,
-                                         verify=self.__certificate_path)
+            response = self._session.post(
+                url=f"{self.__endpoint}/s/chat/thread/{chatId}/admin",
+                headers=self._parse_headers(data=data),
+                data=data,
+                proxies=self.__proxies,
+                verify=self.__certificate_path
+            )
 
         elif fileId:
             data["adminOpName"] = 110
             data["adminOpValue"] = 9
             data = dumps(data)
-            response = self._session.post(url=f"{self.__endpoint}/s/shared-folder/files/{fileId}/admin",
-                                         headers=self._parse_headers(data=data), data=data, proxies=self.__proxies,
-                                         verify=self.__certificate_path)
+            response = self._session.post(
+                url=f"{self.__endpoint}/s/shared-folder/files/{fileId}/admin",
+                headers=self._parse_headers(data=data),
+                data=data,
+                proxies=self.__proxies,
+                verify=self.__certificate_path
+            )
 
         else:
             raise SpecifyType()
         if response.status_code != 200:
             return CheckException(response.text)
-        else:
-            return loads(response.text)
 
-    def unhide(self, userId: str = None, chatId: str = None, blogId: str = None, wikiId: str = None, quizId: str = None,
-               fileId: str = None, reason: str = None):
+        return loads(response.text)
+
+    def unhide(
+            self,
+            userId: str = None,
+            chatId: str = None,
+            blogId: str = None,
+            wikiId: str = None,
+            quizId: str = None,
+            fileId: str = None, reason: str = None
+    ) -> Dict[str, Any]:
         data = {
             "adminOpNote": {
                 "content": reason
@@ -3086,61 +3510,90 @@ class SubClient(Client):
         if userId:
             data["adminOpName"] = 19
             data = dumps(data)
-            response = self._session.post(url=f"{self.__endpoint}/s/user-profile/{userId}/admin",
-                                         headers=self._parse_headers(data=data), data=data, proxies=self.__proxies,
-                                         verify=self.__certificate_path)
+            response = self._session.post(
+                url=f"{self.__endpoint}/s/user-profile/{userId}/admin",
+                headers=self._parse_headers(data=data),
+                data=data,
+                proxies=self.__proxies,
+                verify=self.__certificate_path
+            )
 
         elif blogId:
             data["adminOpName"] = 110
             data["adminOpValue"] = 0
             data = dumps(data)
-            response = self._session.post(url=f"{self.__endpoint}/s/blog/{blogId}/admin",
-                                         headers=self._parse_headers(data=data), data=data, proxies=self.__proxies,
-                                         verify=self.__certificate_path)
+            response = self._session.post(
+                url=f"{self.__endpoint}/s/blog/{blogId}/admin",
+                headers=self._parse_headers(data=data),
+                data=data,
+                proxies=self.__proxies,
+                verify=self.__certificate_path
+            )
 
         elif quizId:
             data["adminOpName"] = 110
             data["adminOpValue"] = 0
             data = dumps(data)
-            response = self._session.post(url=f"{self.__endpoint}/s/blog/{quizId}/admin",
-                                         headers=self._parse_headers(data=data), data=data, proxies=self.__proxies,
-                                         verify=self.__certificate_path)
+            response = self._session.post(
+                url=f"{self.__endpoint}/s/blog/{quizId}/admin",
+                headers=self._parse_headers(data=data),
+                data=data,
+                proxies=self.__proxies,
+                verify=self.__certificate_path
+            )
 
         elif wikiId:
             data["adminOpName"] = 110
             data["adminOpValue"] = 0
             data = dumps(data)
-            response = self._session.post(url=f"{self.__endpoint}/s/item/{wikiId}/admin",
-                                         headers=self._parse_headers(data=data), data=data, proxies=self.__proxies,
-                                         verify=self.__certificate_path)
+            response = self._session.post(
+                url=f"{self.__endpoint}/s/item/{wikiId}/admin",
+                headers=self._parse_headers(data=data),
+                data=data,
+                proxies=self.__proxies,
+                verify=self.__certificate_path
+            )
 
         elif chatId:
             data["adminOpName"] = 110
             data["adminOpValue"] = 0
             data = dumps(data)
-            response = self._session.post(url=f"{self.__endpoint}/s/chat/thread/{chatId}/admin",
-                                         headers=self._parse_headers(data=data), data=data, proxies=self.__proxies,
-                                         verify=self.__certificate_path)
+            response = self._session.post(
+                url=f"{self.__endpoint}/s/chat/thread/{chatId}/admin",
+                headers=self._parse_headers(data=data),
+                data=data,
+                proxies=self.__proxies,
+                verify=self.__certificate_path
+            )
 
         elif fileId:
             data["adminOpName"] = 110
             data["adminOpValue"] = 0
             data = dumps(data)
-            response = self._session.post(url=f"{self.__endpoint}/s/shared-folder/files/{fileId}/admin",
-                                         headers=self._parse_headers(data=data), data=data, proxies=self.__proxies,
-                                         verify=self.__certificate_path)
+            response = self._session.post(
+                url=f"{self.__endpoint}/s/shared-folder/files/{fileId}/admin",
+                headers=self._parse_headers(data=data),
+                data=data, proxies=self.__proxies,
+                verify=self.__certificate_path
+            )
 
         else:
             raise SpecifyType()
+
         if response.status_code != 200:
             return CheckException(response.text)
-        else:
-            return loads(response.text)
 
-    def edit_titles(self, userId: str, titles: list, colors: list):
+        return loads(response.text)
+
+    def edit_titles(
+            self,
+            userId: str,
+            titles: List[str],
+            colors: List[str]
+    ) -> Dict[str, Any]:
         tlt = []
-        for titles, colors in zip(titles, colors):
-            tlt.append({"title": titles, "color": colors})
+        for title, color in zip(titles, colors):
+            tlt.append({"title": title, "color": color})
 
         data = dumps({
             "adminOpName": 207,
@@ -3150,16 +3603,19 @@ class SubClient(Client):
             "timestamp": int(timestamp() * 1000)
         })
 
-        response = self._session.post(url=f"{self.__endpoint}/s/user-profile/{userId}/admin",
-                                     headers=self._parse_headers(data=data), data=data, proxies=self.__proxies,
-                                     verify=self.__certificate_path)
+        response = self._session.post(
+            url=f"{self.__endpoint}/s/user-profile/{userId}/admin",
+            headers=self._parse_headers(data=data),
+            data=data,
+            proxies=self.__proxies,
+            verify=self.__certificate_path
+        )
         if response.status_code != 200:
             return CheckException(response.text)
-        else:
-            return loads(response.text)
 
-    # TODO : List all warning texts
-    def warn(self, userId: str, reason: str = None):
+        return loads(response.text)
+
+    def warn(self, userId: str, reason: str = None) -> Dict[str, Any]:
         data = dumps({
             "uid": userId,
             "title": "Custom",
@@ -3174,28 +3630,25 @@ class SubClient(Client):
             "timestamp": int(timestamp() * 1000)
         })
 
-        response = self._session.post(url=f"{self.__endpoint}/s/notice", headers=self._parse_headers(data=data),
-                                     data=data, proxies=self.__proxies, verify=self.__certificate_path)
+        response = self._session.post(
+            url=f"{self.__endpoint}/s/notice",
+            headers=self._parse_headers(data=data),
+            data=data,
+            proxies=self.__proxies,
+            verify=self.__certificate_path
+        )
         if response.status_code != 200:
             return CheckException(response.text)
-        else:
-            return loads(response.text)
 
-    # TODO : List all strike texts
-    def strike(self, userId: str, time: int, title: str = None, reason: str = None):
-        if time == 1:
-            time = 86400
-        elif time == 2:
-            time = 10800
-        elif time == 3:
-            time = 21600
-        elif time == 4:
-            time = 43200
-        elif time == 5:
-            time = 86400
-        else:
-            raise WrongType(time)
+        return loads(response.text)
 
+    def strike(
+            self,
+            userId: str,
+            hours: int,
+            title: str = None,
+            reason: str = None
+    ) -> Dict[str, Any]:
         data = dumps({
             "uid": userId,
             "title": title,
@@ -3205,20 +3658,30 @@ class SubClient(Client):
                 "objectType": 0
             },
             "penaltyType": 1,
-            "penaltyValue": time,
+            "penaltyValue": hours * 3600,
             "adminOpNote": {},
             "noticeType": 4,
             "timestamp": int(timestamp() * 1000)
         })
 
-        response = self._session.post(url=f"{self.__endpoint}/s/notice", headers=self._parse_headers(data=data),
-                                     data=data, proxies=self.__proxies, verify=self.__certificate_path)
+        response = self._session.post(
+            url=f"{self.__endpoint}/s/notice",
+            headers=self._parse_headers(data=data),
+            data=data,
+            proxies=self.__proxies,
+            verify=self.__certificate_path
+        )
         if response.status_code != 200:
             return CheckException(response.text)
-        else:
-            return loads(response.text)
 
-    def ban(self, userId: str, reason: str, banType: int = None):
+        return loads(response.text)
+
+    def ban(
+            self,
+            userId: str,
+            reason: str,
+            banType: int = None
+    ) -> Dict[str, Any]:
         data = dumps({
             "reasonType": banType,
             "note": {
@@ -3227,15 +3690,19 @@ class SubClient(Client):
             "timestamp": int(timestamp() * 1000)
         })
 
-        response = self._session.post(url=f"{self.__endpoint}/s/user-profile/{userId}/ban",
-                                     headers=self._parse_headers(data=data), data=data, proxies=self.__proxies,
-                                     verify=self.__certificate_path)
+        response = self._session.post(
+            url=f"{self.__endpoint}/s/user-profile/{userId}/ban",
+            headers=self._parse_headers(data=data),
+            data=data,
+            proxies=self.__proxies,
+            verify=self.__certificate_path
+        )
         if response.status_code != 200:
             return CheckException(response.text)
-        else:
-            return loads(response.text)
 
-    def unban(self, userId: str, reason: str):
+        return loads(response.text)
+
+    def unban(self, userId: str, reason: str) -> Dict[str, Any]:
         data = dumps({
             "note": {
                 "content": reason
@@ -3243,125 +3710,123 @@ class SubClient(Client):
             "timestamp": int(timestamp() * 1000)
         })
 
-        response = self._session.post(url=f"{self.__endpoint}/s/user-profile/{userId}/unban",
-                                     headers=self._parse_headers(data=data), data=data, proxies=self.__proxies,
-                                     verify=self.__certificate_path)
+        response = self._session.post(
+            url=f"{self.__endpoint}/s/user-profile/{userId}/unban",
+            headers=self._parse_headers(data=data),
+            data=data,
+            proxies=self.__proxies,
+            verify=self.__certificate_path
+        )
         if response.status_code != 200:
             return CheckException(response.text)
-        else:
-            return loads(response.text)
 
-    def reorder_featured_users(self, userIds: list):
+        return loads(response.text)
+
+    def reorder_featured_users(self, userIds: list) -> Dict[str, Any]:
         data = dumps({
             "uidList": userIds,
             "timestamp": int(timestamp() * 1000)
         })
 
-        response = self._session.post(url=f"{self.__endpoint}/s/user-profile/featured/reorder",
-                                     headers=self._parse_headers(data=data), data=data, proxies=self.__proxies,
-                                     verify=self.__certificate_path)
+        response = self._session.post(
+            url=f"{self.__endpoint}/s/user-profile/featured/reorder",
+            headers=self._parse_headers(data=data),
+            data=data, proxies=self.__proxies,
+            verify=self.__certificate_path
+        )
         if response.status_code != 200:
             return CheckException(response.text)
-        else:
-            return loads(response.text)
 
-    def get_hidden_blogs(self, start: int = 0, size: int = 25):
-        response = self._session.get(url=f"{self.__endpoint}/s/feed/blog-disabled?start={start}&size={size}",
-                                    headers=self._parse_headers(), proxies=self.__proxies, verify=self.__certificate_path)
-        if response.status_code != 200:
-            return CheckException(response.text)
-        else:
-            return BlogList(loads(response.text)["blogList"]).BlogList
+        return loads(response.text)
 
-    def get_featured_users(self, start: int = 0, size: int = 25):
-        response = self._session.get(url=f"{self.__endpoint}/s/user-profile?type=featured&start={start}&size={size}",
-                                    headers=self._parse_headers(), proxies=self.__proxies, verify=self.__certificate_path)
-        if response.status_code != 200:
-            return CheckException(response.text)
-        else:
-            return UserProfileCountList(loads(response.text)).UserProfileCountList
-
-    def review_quiz_questions(self, quizId: str):
-        response = self._session.get(url=f"{self.__endpoint}/s/blog/{quizId}?action=review",
-                                    headers=self._parse_headers(), proxies=self.__proxies, verify=self.__certificate_path)
-        if response.status_code != 200:
-            return CheckException(response.text)
-        else:
-            return QuizQuestionList(loads(response.text)["blog"]["quizQuestionList"]).QuizQuestionList
-
-    def get_recent_quiz(self, start: int = 0, size: int = 25):
-        response = self._session.get(url=f"{self.__endpoint}/s/blog?type=quizzes-recent&start={start}&size={size}",
-                                    headers=self._parse_headers(), proxies=self.__proxies, verify=self.__certificate_path)
+    def get_hidden_blogs(self, start: int = 0, size: int = 25) -> BlogList:
+        response = self._session.get(
+            url=f"{self.__endpoint}/s/feed/blog-disabled?" +
+                f"start={start}&size={size}",
+            headers=self._parse_headers(),
+            proxies=self.__proxies,
+            verify=self.__certificate_path
+        )
         if response.status_code != 200:
             return CheckException(response.text)
         else:
             return BlogList(loads(response.text)["blogList"]).BlogList
 
-    def get_trending_quiz(self, start: int = 0, size: int = 25):
-        response = self._session.get(url=f"{self.__endpoint}/s/feed/quiz-trending?start={start}&size={size}",
-                                    headers=self._parse_headers(), proxies=self.__proxies, verify=self.__certificate_path)
-        if response.status_code != 200:
-            return CheckException(response.text)
-        else:
-            return BlogList(loads(response.text)["blogList"]).BlogList
-
-    def get_best_quiz(self, start: int = 0, size: int = 25):
-        response = self._session.get(url=f"{self.__endpoint}/s/feed/quiz-best-quizzes?start={start}&size={size}",
-                                    headers=self._parse_headers(), proxies=self.__proxies, verify=self.__certificate_path)
-        if response.status_code != 200:
-            return CheckException(response.text)
-        else:
-            return BlogList(loads(response.text)["blogList"]).BlogList
-
-    def send_action(self, actions: list, blogId: str = None, quizId: str = None, lastAction: bool = False):
-        # Action List
-        # Browsing
-
-        if lastAction is True:
-            t = 306
-        else:
-            t = 304
-
-        data = {
-            "o": {
-                "actions": actions,
-                "target": f"ndc://x{self.comId}/",
-                "ndcId": int(self.comId),
-                "params": {"topicIds": [45841, 17254, 26542, 42031, 22542, 16371, 6059, 41542, 15852]},
-                "id": "831046"
-            },
-            "t": t
-        }
-
-        if blogId is not None or quizId is not None:
-            data["target"] = f"ndc://x{self.comId}/blog/{blogId}"
-            if blogId is not None: data["params"]["blogType"] = 0
-            if quizId is not None: data["params"]["blogType"] = 6
-
-        return self.send(dumps(data))
-
-    # Provided by "spectrum#4691"
-    def purchase(self, objectId: str, objectType: int, aminoPlus: bool = True, autoRenew: bool = False):
-        data = {'objectId': objectId,
-                'objectType': objectType,
-                'v': 1,
-                "timestamp": int(timestamp() * 1000)}
-
-        if aminoPlus:
-            data['paymentContext'] = {'discountStatus': 1, 'discountValue': 1, 'isAutoRenew': autoRenew}
-        else:
-            data['paymentContext'] = {'discountStatus': 0, 'discountValue': 1, 'isAutoRenew': autoRenew}
-
-        data = dumps(data)
-        response = self._session.post(url=f"{self.__endpoint}/s/store/purchase",
-                                     headers=self._parse_headers(data=data), data=data)
+    def get_featured_users(
+            self,
+            start: int = 0,
+            size: int = 25
+    ) -> UserProfileCountList:
+        response = self._session.get(
+            url=f"{self.__endpoint}/s/user-profile?" +
+                f"type=featured&start={start}&size={size}",
+            headers=self._parse_headers(),
+            proxies=self.__proxies,
+            verify=self.__certificate_path
+        )
         if response.status_code != 200:
             return CheckException(response.text)
 
-        return response.status_code
+        return UserProfileCountList(loads(response.text)).UserProfileCountList
 
-    # Provided by "spectrum#4691"
-    def apply_avatar_frame(self, avatarId: str, applyToAll: bool = True):
+    def review_quiz_questions(self, quizId: str) -> QuizQuestionList:
+        response = self._session.get(
+            url=f"{self.__endpoint}/s/blog/{quizId}?action=review",
+            headers=self._parse_headers(),
+            proxies=self.__proxies,
+            verify=self.__certificate_path
+        )
+        if response.status_code != 200:
+            return CheckException(response.text)
+
+        return QuizQuestionList(
+            loads(response.text)["blog"]["quizQuestionList"]
+        ).QuizQuestionList
+
+    def get_recent_quiz(self, start: int = 0, size: int = 25) -> BlogList:
+        response = self._session.get(
+            url=f"{self.__endpoint}/s/blog?type=quizzes-recent" +
+                f"&start={start}&size={size}",
+            headers=self._parse_headers(),
+            proxies=self.__proxies,
+            verify=self.__certificate_path
+        )
+        if response.status_code != 200:
+            return CheckException(response.text)
+
+        return BlogList(loads(response.text)["blogList"]).BlogList
+
+    def get_trending_quiz(self, start: int = 0, size: int = 25) -> BlogList:
+        response = self._session.get(
+            url=f"{self.__endpoint}/s/feed/quiz-trending" +
+                f"?start={start}&size={size}",
+            headers=self._parse_headers(),
+            proxies=self.__proxies,
+            verify=self.__certificate_path
+        )
+        if response.status_code != 200:
+            return CheckException(response.text)
+
+        return BlogList(loads(response.text)["blogList"]).BlogList
+
+    def get_best_quiz(self, start: int = 0, size: int = 25) -> BlogList:
+        response = self._session.get(
+            url=f"{self.__endpoint}/s/feed/quiz-best-quizzes" +
+                f"?start={start}&size={size}",
+            headers=self._parse_headers(),
+            proxies=self.__proxies,
+            verify=self.__certificate_path
+        )
+        if response.status_code != 200:
+            return CheckException(response.text)
+
+        return BlogList(loads(response.text)["blogList"]).BlogList
+
+    def apply_avatar_frame(
+            self,
+            avatarId: str,
+            applyToAll: bool = True
+    ) -> int:
         """
         Apply avatar frame.
 
@@ -3380,18 +3845,23 @@ class SubClient(Client):
                 "applyToAll": 0,
                 "timestamp": int(timestamp() * 1000)}
 
-        if applyToAll: data["applyToAll"] = 1
+        if applyToAll:
+            data["applyToAll"] = 1
 
         data = dumps(data)
-        response = self._session.post(url=f"{self.__endpoint}/s/avatar-frame/apply",
-                                     headers=self._parse_headers(data=data), data=data, proxies=self.__proxies,
-                                     verify=self.__certificate_path)
+        response = self._session.post(
+            url=f"{self.__endpoint}/s/avatar-frame/apply",
+            headers=self._parse_headers(data=data),
+            data=data,
+            proxies=self.__proxies,
+            verify=self.__certificate_path
+        )
         if response.status_code != 200:
             return CheckException(response.text)
 
         return response.status_code
 
-    def invite_to_vc(self, chatId: str, userId: str):
+    def invite_to_vc(self, chatId: str, userId: str) -> int:
         """
         Invite a User to a Voice Chat
 
@@ -3409,15 +3879,20 @@ class SubClient(Client):
             "uid": userId
         })
 
-        response = self._session.post(url=f"{self.__endpoint}/s/chat/thread/{chatId}/vvchat-presenter/invite/",
-                                     headers=self._parse_headers(data=data), data=data, proxies=self.__proxies,
-                                     verify=self.__certificate_path)
+        response = self._session.post(
+            url=f"{self.__endpoint}/s/chat/thread/{chatId}" +
+                "/vvchat-presenter/invite/",
+            headers=self._parse_headers(data=data),
+            data=data,
+            proxies=self.__proxies,
+            verify=self.__certificate_path
+        )
         if response.status_code != 200:
             return CheckException(response.text)
 
         return response.status_code
 
-    def add_poll_option(self, blogId: str, question: str):
+    def add_poll_option(self, blogId: str, question: str) -> int:
         data = dumps({
             "mediaList": None,
             "title": question,
@@ -3425,15 +3900,24 @@ class SubClient(Client):
             "timestamp": int(timestamp() * 1000)
         })
 
-        response = self._session.post(url=f"{self.__endpoint}/s/blog/{blogId}/poll/option",
-                                     headers=self._parse_headers(data=data), data=data, proxies=self.__proxies,
-                                     verify=self.__certificate_path)
+        response = self._session.post(
+            url=f"{self.__endpoint}/s/blog/{blogId}/poll/option",
+            headers=self._parse_headers(data=data),
+            data=data,
+            proxies=self.__proxies,
+            verify=self.__certificate_path
+        )
         if response.status_code != 200:
             return CheckException(response.text)
 
         return response.status_code
 
-    def create_wiki_category(self, title: str, parentCategoryId: str, content: str = None):
+    def create_wiki_category(
+            self,
+            title: str,
+            parentCategoryId: str,
+            content: str = None
+    ) -> int:
         data = dumps({
             "content": content,
             "icon": None,
@@ -3443,85 +3927,130 @@ class SubClient(Client):
             "timestamp": int(timestamp() * 1000)
         })
 
-        response = self._session.post(url=f"{self.__endpoint}/s/item-category", headers=self._parse_headers(data=data),
-                                     data=data, proxies=self.__proxies, verify=self.__certificate_path)
+        response = self._session.post(
+            url=f"{self.__endpoint}/s/item-category",
+            headers=self._parse_headers(data=data),
+            data=data,
+            proxies=self.__proxies,
+            verify=self.__certificate_path
+        )
         if response.status_code != 200:
             return CheckException(response.text)
 
         return response.status_code
 
-    def create_shared_folder(self, title: str):
+    def create_shared_folder(self, title: str) -> int:
         data = dumps({
             "title": title,
             "timestamp": int(timestamp() * 1000)
         })
-        response = self._session.post(url=f"{self.__endpoint}/s/shared-folder/folders",
-                                     headers=self._parse_headers(data=data), data=data, proxies=self.__proxies,
-                                     verify=self.__certificate_path)
+        response = self._session.post(
+            url=f"{self.__endpoint}/s/shared-folder/folders",
+            headers=self._parse_headers(data=data),
+            data=data,
+            proxies=self.__proxies,
+            verify=self.__certificate_path
+        )
         if response.status_code != 200:
             return CheckException(response.text)
 
         return response.status_code
 
-    def submit_to_wiki(self, wikiId: str, message: str):
+    def submit_to_wiki(self, wikiId: str, message: str) -> int:
         data = dumps({
             "message": message,
             "itemId": wikiId,
             "timestamp": int(timestamp() * 1000)
         })
 
-        response = self._session.post(url=f"{self.__endpoint}/s/knowledge-base-request",
-                                     headers=self._parse_headers(data=data), data=data, proxies=self.__proxies,
-                                     verify=self.__certificate_path)
+        response = self._session.post(
+            url=f"{self.__endpoint}/s/knowledge-base-request",
+            headers=self._parse_headers(data=data),
+            data=data,
+            proxies=self.__proxies,
+            verify=self.__certificate_path
+        )
         if response.status_code != 200:
             return CheckException(response.text)
 
         return response.status_code
 
-    def accept_wiki_request(self, requestId: str, destinationCategoryIdList: list):
+    def accept_wiki_request(
+            self,
+            requestId: str,
+            destinationCategoryIdList: List[Any]
+    ) -> int:
         data = dumps({
             "destinationCategoryIdList": destinationCategoryIdList,
             "actionType": "create",
             "timestamp": int(timestamp() * 1000)
         })
 
-        response = self._session.post(url=f"{self.__endpoint}/s/knowledge-base-request/{requestId}/approve",
-                                     headers=self._parse_headers(data=data), data=data, proxies=self.__proxies,
-                                     verify=self.__certificate_path)
+        response = self._session.post(
+            url=f"{self.__endpoint}/s/knowledge-base-request" +
+                f"/{requestId}/approve",
+            headers=self._parse_headers(data=data),
+            data=data, proxies=self.__proxies,
+            verify=self.__certificate_path
+        )
         if response.status_code != 200:
             return CheckException(response.text)
 
         return response.status_code
 
-    def reject_wiki_request(self, requestId: str):
+    def reject_wiki_request(self, requestId: str) -> int:
         data = dumps({})
 
-        response = self._session.post(url=f"{self.__endpoint}/s/knowledge-base-request/{requestId}/reject",
-                                     headers=self._parse_headers(data=data), data=data, proxies=self.__proxies,
-                                     verify=self.__certificate_path)
+        response = self._session.post(
+            url=f"{self.__endpoint}/s/knowledge-base-request" +
+                f"/{requestId}/reject",
+            headers=self._parse_headers(data=data),
+            data=data,
+            proxies=self.__proxies,
+            verify=self.__certificate_path
+        )
         if response.status_code != 200:
             return CheckException(response.text)
 
         return response.status_code
 
-    def get_wiki_submissions(self, start: int = 0, size: int = 25):
+    def get_wiki_submissions(
+            self,
+            start: int = 0,
+            size: int = 25
+    ) -> WikiRequestList:
         response = self._session.get(
-            url=f"{self.__endpoint}/s/knowledge-base-request?type=all&start={start}&size={size}",
-            headers=self._parse_headers(), proxies=self.__proxies, verify=self.__certificate_path)
+            url=f"{self.__endpoint}/s/knowledge-base-request" +
+                f"?type=all&start={start}&size={size}",
+                headers=self._parse_headers(),
+                proxies=self.__proxies,
+                verify=self.__certificate_path
+        )
         if response.status_code != 200:
             return CheckException(response.text)
-        else:
-            return WikiRequestList(loads(response.text)["knowledgeBaseRequestList"]).WikiRequestList
 
-    def get_live_layer(self):
-        response = self._session.get(url=f"{self.__endpoint}/s/live-layer/homepage?v=2", headers=self._parse_headers(),
-                                    proxies=self.__proxies, verify=self.__certificate_path)
+        return WikiRequestList(
+            loads(response.text)["knowledgeBaseRequestList"]
+        ).WikiRequestList
+
+    def get_live_layer(self) -> LiveLayer:
+        response = self._session.get(
+            url=f"{self.__endpoint}/s/live-layer/homepage?v=2",
+            headers=self._parse_headers(),
+            proxies=self.__proxies,
+            verify=self.__certificate_path
+        )
         if response.status_code != 200:
             return CheckException(response.text)
-        else:
-            return LiveLayer(loads(response.text)["liveLayerList"]).LiveLayer
 
-    def apply_bubble(self, bubbleId: str, chatId: str, applyToAll: bool = False):
+        return LiveLayer(loads(response.text)["liveLayerList"]).LiveLayer
+
+    def apply_bubble(
+            self,
+            bubbleId: str,
+            chatId: str,
+            applyToAll: bool = False
+    ) -> int:
         data = {
             "applyToAll": 0,
             "bubbleId": bubbleId,
@@ -3533,9 +4062,13 @@ class SubClient(Client):
             data["applyToAll"] = 1
 
         data = dumps(data)
-        response = self._session.post(url=f"{self.__endpoint}/s/chat/thread/apply-bubble",
-                                     headers=self._parse_headers(data=data), data=data, proxies=self.__proxies,
-                                     verify=self.__certificate_path)
+        response = self._session.post(
+            url=f"{self.__endpoint}/s/chat/thread/apply-bubble",
+            headers=self._parse_headers(data=data),
+            data=data,
+            proxies=self.__proxies,
+            verify=self.__certificate_path
+        )
         if response.status_code != 200:
             return CheckException(response.text)
 

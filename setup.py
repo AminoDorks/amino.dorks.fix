@@ -23,7 +23,7 @@ setup(
     author_email="misterio1234321@gmail.com",
     description="Library for Amino. Telegram - https://t.me/aminodorks",
     long_description=long_description,
-    long_description_content_type="text/markdown",  # важно для PyPI
+    long_description_content_type="text/markdown",
     url="https://github.com/misterio060/amino.dorks.fix",
     packages=find_packages(),
     install_requires=requirements,

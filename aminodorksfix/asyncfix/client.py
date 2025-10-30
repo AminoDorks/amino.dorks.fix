@@ -1,109 +1,129 @@
-import json
-import base64
-import aiohttp
-import asyncio
-import threading
-
-from uuid import uuid4
-from time import time as timestamp
-from locale import getdefaultlocale as locale
-
-from ..lib.util.helpers import gen_deviceId
-from ..constants import API_URL
-
 from time import (
     timezone,
     sleep
 )
 from typing import (
     BinaryIO,
-    Union
+    Union,
+    Unpack
+)
+from json import (
+    loads,
+    dumps
+)
+from asyncio import (
+    get_event_loop,
+    new_event_loop
 )
 
-from ..lib.util import (
-    exceptions,
-    headers,
-    objects,
-    helpers
+from ..constants import (
+    API_URL,
+    GENERATOR_HEADERS,
+    GENDERS_MAP,
+    MEDIA_TYPES_MAP,
+    SUPPORTED_LANGAUGES,
+    COMMENTS_SORTING_MAP
 )
 from .socket import (
     Callbacks,
     SocketHandler
 )
+from ..lib.util.exceptions import (
+    CheckException,
+    AgeTooLow,
+    SpecifyType,
+    CommunityNotFound,
+    WrongType,
+    UnsupportedLanguage
+)
+from ..lib.util.objects import (
+    UserProfile,
+    CommunityList,
+    UserProfileList,
+    Community,
+    CommentList,
+    Membership,
+    BlogList,
+    WalletHistory,
+    WalletInfo,
+    FromCode,
+    UserProfileCountList
+)
+from ..lib.util.helpers import (
+    gen_deviceId,
+    sid_to_uid,
+    get_credentials
+)
+
+from threading import Thread
+from aiohttp import ClientSession
+from time import time as timestamp
+from locale import getdefaultlocale as locale
+
+from ..lib.util.models import ClientKwargs
+from ..lib.util.headers import ApisHeaders
+from ..lib.util import headers
 
 
 class Client(Callbacks, SocketHandler):
+    __slots__ = (
+        "__api_key",
+        "__device_id",
+        "__api_proxies",
+        "__sid",
+        "__account",
+        "__active_chat_loops",
+        "__stop_loop",
+        "_session",
+        "_dorks_session",
+        "_socket_enabled",
+        "_profile"
+    )
+
     def __init__(
             self,
-            api_key=None,
-            deviceId: str = None,
-            userAgent: str = (
-                "Dalvik/2.1.0 (Linux; U; Android 10; M2006C3MNG Build" +
-                "/QP1A.190711.020;com.narvii.amino.master/4.3.3121)"
-            ),
-            socket_trace: bool = False,
-            socketDebugging: bool = False,
-            socket_enabled: bool = True,
-            autoDevice: bool = False,
-            sub: bool = False
+            api_key: str,
+            deviceId: str = gen_deviceId(),
+            **kwargs: Unpack[ClientKwargs]
     ):
-        self.api = "https://service.aminoapps.com/api/v1"
-        self.authenticated = False
-        self.configured = False
-        self.api_key = api_key
-        self.socket_enabled = socket_enabled
-        self.autoDevice = autoDevice
-        helpers.gen_headers["Authorization"] = api_key
-        if sub:
-            if deviceId:
-                self.device_id = deviceId
-                headers.device_id = deviceId
-            else:
-                self.device_id = headers.device_id
-        else:
-            if deviceId:
-                self.device_id = deviceId
-                headers.device_id = deviceId
-            else:
-                self.device_id = gen_deviceId()
-                headers.device_id = self.device_id
-
-        headers.user_agent = userAgent
+        self.__api_key = api_key
+        self.__device_id = deviceId
+        
+        self._socket_enabled = kwargs.get("socket_enabled", True)
+        GENERATOR_HEADERS["Authorization"] = api_key
 
         SocketHandler.__init__(
             self,
             client=self,
-            socket_trace=socket_trace,
-            debug=socketDebugging
+            socket_trace=kwargs.get("socket_trace", False),
+            debug=kwargs.get("socket_debugging", False),
+            socket_enabled=self._socket_enabled
         )
         Callbacks.__init__(self, self)
 
-        self.json = None
-        self.sid = None
-        self.userId = None
-        self.account: objects.UserProfile = objects.UserProfile(None)
-        self.profile: objects.UserProfile = objects.UserProfile(None)
-        self.secret = None
-        self.session = aiohttp.ClientSession()
+        self._profile: UserProfile = UserProfile(None)
+        self._session = ClientSession()
 
     def __del__(self):
         try:
-            loop = asyncio.get_event_loop()
+            loop = get_event_loop()
             loop.create_task(self._close_session())
         except RuntimeError:
-            loop = asyncio.new_event_loop()
+            loop = new_event_loop()
             loop.run_until_complete(self._close_session())
+    
+    @property
+    def device_id(self):
+        return self.__device_id
 
     async def _close_session(self):
-        if not self.session.closed:
-            await self.session.close()
+        if not self._session.closed:
+            await self._session.close()
 
-    async def parse_headers(self, data: str = None, type: str = None):
-        header = headers.ApisHeaders(deviceId=gen_deviceId(
-
-        ) if self.autoDevice else self.device_id, data=data, type=type)
+    async def _parse_headers(self, data: str = None, type: str = None):
+        header = ApisHeaders(deviceId=self.__device_id, data=data, type=type)
         if data:
-            await header.async_h(self.session)
+            await header.generate_ecdsa(self._session)
         return header.headers
 
     async def join_voice_chat(
@@ -120,7 +140,7 @@ class Client(Callbacks, SocketHandler):
             - **chatId** : ID of the Chat
         """
 
-        data = {
+        self.send(dumps({
             "o": {
                 "ndcId": int(comId),
                 "threadId": chatId,
@@ -128,9 +148,7 @@ class Client(Callbacks, SocketHandler):
                 "id": "2154531"
             },
             "t": 112
-        }
-        data = json.dumps(data)
-        await self.send(data)
+        }))
 
     async def join_video_chat(
             self,
@@ -145,8 +163,7 @@ class Client(Callbacks, SocketHandler):
             - **comId** : ID of the Community
             - **chatId** : ID of the Chat
         """
-
-        data = {
+        self.send(dumps({
             "o": {
                 "ndcId": int(comId),
                 "threadId": chatId,
@@ -155,12 +172,10 @@ class Client(Callbacks, SocketHandler):
                 "id": "2154531"
             },
             "t": 108
-        }
-        data = json.dumps(data)
-        await self.send(data)
+        }))
 
     async def join_video_chat_as_viewer(self, comId: str, chatId: str):
-        data = {
+        self.send(dumps({
             "o":
                 {
                     "ndcId": int(comId),
@@ -169,13 +184,11 @@ class Client(Callbacks, SocketHandler):
                     "id": "72446"
                 },
             "t": 112
-        }
-        data = json.dumps(data)
-        await self.send(data)
+        }))
 
     async def run_vc(self, comId: str, chatId: str, joinType: str):
         while self.active:
-            data = {
+            self.send({
                 "o": {
                     "ndcId": comId,
                     "threadId": chatId,
@@ -183,13 +196,11 @@ class Client(Callbacks, SocketHandler):
                     "id": "2154531"
                 },
                 "t": 112
-            }
-            data = json.dumps(data)
-            await self.send(data)
+            })
             sleep(1)
 
     async def start_vc(self, comId: str, chatId: str, joinType: int = 1):
-        data = {
+        self.send(dumps({
             "o": {
                 "ndcId": comId,
                 "threadId": chatId,
@@ -197,10 +208,9 @@ class Client(Callbacks, SocketHandler):
                 "id": "2154531"
             },
             "t": 112
-        }
-        data = json.dumps(data)
-        await self.send(data)
-        data = {
+        }))
+        
+        self.send(dumps({
             "o": {
                 "ndcId": comId,
                 "threadId": chatId,
@@ -208,15 +218,13 @@ class Client(Callbacks, SocketHandler):
                 "id": "2154531"
             },
             "t": 108
-        }
-        data = json.dumps(data)
-        await self.send(data)
+        }))
         self.active = True
-        threading.Thread(target=self.run_vc, args=[comId, chatId, joinType])
+        Thread(target=self.run_vc, args=[comId, chatId, joinType])
 
     async def end_vc(self, comId: str, chatId: str, joinType: int = 2):
         self.active = False
-        data = {
+        self.send(dumps({
             "o": {
                 "ndcId": comId,
                 "threadId": chatId,
@@ -224,9 +232,7 @@ class Client(Callbacks, SocketHandler):
                 "id": "2154531"
             },
             "t": 112
-        }
-        data = json.dumps(data)
-        await self.send(data)
+        }))
 
     async def verify_yourself(self, email: str, password: str) -> int:
         """
@@ -247,7 +253,7 @@ class Client(Callbacks, SocketHandler):
             >>> await client.verify_yourself("example@example.com", "password")
             200
         """
-        data = json.dumps({
+        data = dumps({
             "email": email,
             "v": 2,
             "secret": f"0 {password}",
@@ -256,15 +262,28 @@ class Client(Callbacks, SocketHandler):
             "action": "normal",
             "timestamp": int(timestamp() * 1000)
         })
-        async with self.session.post(
+        async with self._session.post(
             url=f"{API_URL}/g/s/auth/login",
-            headers=self.__parse_headers(data=data),
+            headers=await self._parse_headers(data=data),
             data=data
         ) as response:
             if response.status != 200:
-                exceptions.CheckException(response.text)
+                CheckException(response.text)
 
             return response.status
+    
+    async def __update_public_key(self):
+        data = dumps(await get_credentials(
+            self._session,
+            str(self._profile.userId)  # stub
+        ))
+        async with self._session.post(
+            url=f"{API_URL}/g/s/security/public_key",
+            headers=await self._parse_headers(data=data), data=data
+        ) as response:
+            if response.status != 200:
+                CheckException(await response.text())
+            return 200
 
     async def login_sid(self, SID: str):
         """
@@ -273,30 +292,12 @@ class Client(Callbacks, SocketHandler):
         **Parameters**
             - **SID** : SID of the account
         """
-        uId = helpers.sid_to_uid(SID)
-        self.authenticated = True
-        self.sid = SID
-        self.userId = uId
-        self.account: objects.UserProfile = await self.get_user_info(uId)
-        self.profile: objects.UserProfile = await self.get_user_info(uId)
-        self.profile.api_key = self.api_key
+
+        self._profile: UserProfile = await self.get_user_info(sid_to_uid(SID))
+        self._profile.api_key = self.__api_key
         headers.sid = self.sid
         headers.userId = self.userId
-        self.profile.api_key = self.api_key
-        await self.pub_key()
-
-    async def pub_key(self):
-        data = json.dumps(await helpers.get_certs_a(
-            self.session,
-            self.userId
-        ))
-        async with self.session.post(
-            url=f"{self.api}/g/s/security/public_key",
-            headers=await self.parse_headers(data=data), data=data
-        ) as response:
-            if response.status != 200:
-                exceptions.CheckException(await response.text())
-            return 200
+        await self.__update_public_key()
 
     async def login(self, email: str, password: str):
         """
@@ -311,42 +312,38 @@ class Client(Callbacks, SocketHandler):
 
             - **Fail** : :meth:`Exceptions <aminofixasync.lib.util.exceptions>`
         """
-        data = json.dumps({
+        data = dumps({
             "email": email,
             "v": 2,
             "secret": f"0 {password}",
-            "deviceID": self.device_id,
+            "deviceID": self.__device_id,
             "clientType": 100,
             "action": "normal",
             "timestamp": int(timestamp() * 1000)
         })
 
-        async with self.session.post(
-            url=f"{self.api}/g/s/auth/login",
-            headers=await self.parse_headers(data=data), data=data
+        async with self._session.post(
+            url=f"{API_URL}/g/s/auth/login",
+            headers=await self._parse_headers(data=data), data=data
         ) as response:
             if response.status != 200:
-                return exceptions.CheckException(await response.text())
+                return CheckException(await response.text())
             else:
                 self.authenticated = True
-                self.json = json.loads(await response.text())
+                self.json = loads(await response.text())
                 self.sid = self.json["sid"]
                 self.userId = self.json["account"]["uid"]
-                self.account: objects.UserProfile = objects.UserProfile(
-                    self.json["account"]
-                ).UserProfile
-                self.profile: objects.UserProfile = objects.UserProfile(
+                self._profile: UserProfile = UserProfile(
                     self.json["userProfile"]
                 ).UserProfile
-                self.profile.api_key = self.api_key
-                self.secret = self.json["secret"]
+                self._profile.api_key = self.__api_key
                 headers.sid = self.sid
                 headers.userId = self.userId
 
-                await self.pub_key()
-                if self.socket_enabled:
-                    await self.run_amino_socket()
-                return json.loads(await response.text())
+                await self.__update_public_key()
+                if self._socket_enabled:
+                    self.run_amino_socket()
+                return loads(await response.text())
 
     async def login_phone(self, phoneNumber: str, password: str):
         """
@@ -361,41 +358,38 @@ class Client(Callbacks, SocketHandler):
 
             - **Fail** : :meth:`Exceptions <aminofixasync.lib.util.exceptions>`
         """
-        data = json.dumps({
+        data = dumps({
             "phoneNumber": phoneNumber,
             "v": 2,
             "secret": f"0 {password}",
-            "deviceID": self.device_id,
+            "deviceID": self.__device_id,
             "clientType": 100,
             "action": "normal",
             "timestamp": int(timestamp() * 1000)
         })
 
-        async with self.session.post(
-            url=f"{self.api}/g/s/auth/login",
-            headers=await self.parse_headers(data=data), data=data
+        async with self._session.post(
+            url=f"{API_URL}/g/s/auth/login",
+            headers=await self._parse_headers(data=data), data=data
         ) as response:
             if response.status != 200:
-                return exceptions.CheckException(await response.text())
+                return CheckException(await response.text())
             else:
                 self.authenticated = True
-                self.json = json.loads(await response.text())
+                self.json = loads(await response.text())
                 self.sid = self.json["sid"]
                 self.userId = self.json["account"]["uid"]
-                self.account: objects.UserProfile = objects.UserProfile(
-                    self.json["account"]
-                ).UserProfile
-                self.profile: objects.UserProfile = objects.UserProfile(
+                self._profile: UserProfile = UserProfile(
                     self.json["userProfile"]
                 ).UserProfile
-                self.profile.api_key = self.api_key
+                self._profile.api_key = self.__api_key
                 self.secret = self.json["secret"]
                 headers.sid = self.sid
                 headers.userId = self.userId
-                await self.pub_key()
-                if self.socket_enabled:
+                await self.__update_public_key()
+                if self._socket_enabled:
                     self.run_amino_socket()
-                return json.loads(await response.text())
+                return loads(await response.text())
 
     async def login_secret(self, secret: str):
         """
@@ -409,97 +403,36 @@ class Client(Callbacks, SocketHandler):
 
             - **Fail** : :meth:`Exceptions <aminofixasync.lib.util.exceptions>`
         """
-        data = json.dumps({
+        data = dumps({
             "v": 2,
             "secret": secret,
-            "deviceID": self.device_id,
+            "deviceID": self.__device_id,
             "clientType": 100,
             "action": "normal",
             "timestamp": int(timestamp() * 1000)
         })
 
-        async with self.session.post(
-            url=f"{self.api}/g/s/auth/login",
-            headers=await self.parse_headers(data=data), data=data
+        async with self._session.post(
+            url=f"{API_URL}/g/s/auth/login",
+            headers=await self._parse_headers(data=data), data=data
         ) as response:
             if response.status != 200:
-                return exceptions.CheckException(await response.text())
+                return CheckException(await response.text())
             else:
                 self.authenticated = True
-                self.json = json.loads(await response.text())
+                self.json = loads(await response.text())
                 self.sid = self.json["sid"]
                 self.userId = self.json["account"]["uid"]
-                self.account: objects.UserProfile = objects.UserProfile(
-                    self.json["account"]
-                ).UserProfile
-                self.profile: objects.UserProfile = objects.UserProfile(
+                self._profile: UserProfile = UserProfile(
                     self.json["userProfile"]
                 ).UserProfile
-                self.profile.api_key = self.api_key
+                self._profile.api_key = self.__api_key
                 headers.sid = self.sid
                 headers.userId = self.userId
-                await self.pub_key()
-                if self.socket_enabled:
+                await self.__update_public_key()
+                if self._socket_enabled:
                     self.run_amino_socket()
-                return json.loads(await response.text())
-
-    async def register(
-            self,
-            nickname: str,
-            email: str,
-            password: str,
-            verificationCode: str,
-            deviceId: str = None
-    ):
-        """
-        Register an account.
-
-        **Parameters**
-            - **nickname** : Nickname of the account.
-            - **email** : Email of the account.
-            - **password** : Password of the account.
-            - **verificationCode** : Verification code.
-            - **deviceId** : The device id being registered to.
-
-        **Returns**
-            - **Success** : 200 (int)
-
-            - **Fail** : :meth:`Exceptions <aminofixasync.lib.util.exceptions>`
-        """
-
-        if not deviceId:
-            deviceId = self.device_id
-
-        data = json.dumps({
-            "secret": f"0 {password}",
-            "deviceID": deviceId,
-            "email": email,
-            "clientType": 100,
-            "nickname": nickname,
-            "latitude": 0,
-            "longitude": 0,
-            "address": None,
-            "clientCallbackURL": "narviiapp://relogin",
-            "validationContext": {
-                "data": {
-                    "code": verificationCode
-                },
-                "type": 1,
-                "identity": email
-            },
-            "type": 1,
-            "identity": email,
-            "timestamp": int(timestamp() * 1000)
-        })
-
-        async with self.session.post(
-            url=f"{self.api}/g/s/auth/register",
-            headers=await self.parse_headers(data=data), data=data
-        ) as response:
-            if response.status != 200:
-                return exceptions.CheckException(await response.text())
-            else:
-                return response.status
+                return loads(await response.text())
 
     async def restore(self, email: str, password: str):
         """
@@ -514,16 +447,19 @@ class Client(Callbacks, SocketHandler):
 
             - **Fail** : :meth:`Exceptions <aminofixasync.lib.util.exceptions>`
         """
-        data = json.dumps({
+        data = dumps({
             "secret": f"0 {password}",
-            "deviceID": device.device_id,
+            "deviceID": self.__device_id,
             "email": email,
             "timestamp": int(timestamp() * 1000)
         })
 
-        async with self.session.post(f"{self.api}/g/s/account/delete-request/cancel", headers=await self.parse_headers(data=data), data=data) as response:
-            if response.status != 200: return exceptions.CheckException(await response.text())
-            else: return response.status
+        async with self._session.post(f"{API_URL}/g/s/account/delete-request/cancel", headers=await self._parse_headers(data=data), data=data) as response:
+            if response.status != 200:
+                return CheckException(await response.text())
+
+           
+                return response.status
 
     async def logout(self):
         """
@@ -537,15 +473,17 @@ class Client(Callbacks, SocketHandler):
 
             - **Fail** : :meth:`Exceptions <aminofixasync.lib.util.exceptions>`
         """
-        data = json.dumps({
-            "deviceID": self.device_id,
+        data = dumps({
+            "deviceID": self.__device_id,
             "clientType": 100,
             "timestamp": int(timestamp() * 1000)
         })
 
-        async with self.session.post(f"{self.api}/g/s/auth/logout", headers=await self.parse_headers(data=data), data=data) as response:
-            if response.status != 200: return exceptions.CheckException(await response.text())
-            else:
+        async with self._session.post(f"{API_URL}/g/s/auth/logout", headers=await self._parse_headers(data=data), data=data) as response:
+            if response.status != 200:
+                return CheckException(await response.text())
+
+           
                 self.authenticated = False
                 self.json = None
                 self.sid = None
@@ -553,8 +491,8 @@ class Client(Callbacks, SocketHandler):
                 self.account: None
                 self.profile: None
                 headers.sid = None
-                await self.close()
-                await self.session.close()
+                self.close()
+                await self._session.close()
                 return response.status
 
     async def configure(self, age: int, gender: str):
@@ -571,22 +509,24 @@ class Client(Callbacks, SocketHandler):
 
             - **Fail** : :meth:`Exceptions <aminofixasync.lib.util.exceptions>`
         """
-        if gender.lower() == "male": gender = 1
-        elif gender.lower() == "female": gender = 2
-        elif gender.lower() == "non-binary": gender = 255
-        else: raise exceptions.SpecifyType()
+        gender_from_map = GENDERS_MAP.get(gender)
 
-        if age <= 12: raise exceptions.AgeTooLow()
+        if not gender_from_map:
+            raise SpecifyType()
+        if age <= 12:
+            raise AgeTooLow()
 
-        data = json.dumps({
+        data = dumps({
             "age": age,
-            "gender": gender,
+            "gender": gender_from_map,
             "timestamp": int(timestamp() * 1000)
         })
 
-        async with self.session.post(f"{self.api}/g/s/persona/profile/basic", headers=await self.parse_headers(data=data), data=data) as response:
-            if response.status != 200: return exceptions.CheckException(await response.text())
-            else: return response.status
+        async with self._session.post(f"{API_URL}/g/s/persona/profile/basic", headers=await self._parse_headers(data=data), data=data) as response:
+            if response.status != 200:
+                return CheckException(await response.text())
+
+            return response.status
 
     async def verify(self, email: str, code: str):
         """
@@ -601,18 +541,20 @@ class Client(Callbacks, SocketHandler):
 
             - **Fail** : :meth:`Exceptions <aminofixasync.lib.util.exceptions>`
         """
-        data = json.dumps({
+        data = dumps({
             "validationContext": {
                 "type": 1,
                 "identity": email,
                 "data": {"code": code}},
-            "deviceID": device.device_id,
+            "deviceID": self.__device_id,
             "timestamp": int(timestamp() * 1000)
         })
 
-        async with self.session.post(f"{self.api}/g/s/auth/check-security-validation", headers=await self.parse_headers(data=data), data=data) as response:
-            if response.status != 200: return exceptions.CheckException(await response.text())
-            else: return response.status
+        async with self._session.post(f"{API_URL}/g/s/auth/check-security-validation", headers=await self._parse_headers(data=data), data=data) as response:
+            if response.status != 200:
+                return CheckException(await response.text())
+
+            return response.status
 
     async def request_verify_code(self, email: str, resetPassword: bool = False):
         """
@@ -630,17 +572,19 @@ class Client(Callbacks, SocketHandler):
         data = {
             "identity": email,
             "type": 1,
-            "deviceID": device.device_id
+            "deviceID": self.__device_id
         }
 
         if resetPassword is True:
             data["level"] = 2
             data["purpose"] = "reset-password"
 
-        data = json.dumps(data)
-        async with self.session.post(f"{self.api}/g/s/auth/request-security-validation", headers=await self.parse_headers(data=data), data=data) as response:
-            if response.status != 200: return exceptions.CheckException(await response.text())
-            else: return response.status
+        data = dumps(data)
+        async with self._session.post(f"{API_URL}/g/s/auth/request-security-validation", headers=await self._parse_headers(data=data), data=data) as response:
+            if response.status != 200:
+                return CheckException(await response.text())
+
+            return response.status
 
     async def activate_account(self, email: str, code: str):
         """
@@ -656,16 +600,18 @@ class Client(Callbacks, SocketHandler):
             - **Fail** : :meth:`Exceptions <aminofixasync.lib.util.exceptions>`
         """
 
-        data = json.dumps({
+        data = dumps({
             "type": 1,
             "identity": email,
             "data": {"code": code},
-            "deviceID": device.device_id
+            "deviceID": self.__device_id
         })
 
-        async with self.session.post(f"{self.api}/g/s/auth/activate-email", headers=await self.parse_headers(data=data), data=data) as response:
-            if response.status != 200: return exceptions.CheckException(await response.text())
-            else: return response.status
+        async with self._session.post(f"{API_URL}/g/s/auth/activate-email", headers=await self._parse_headers(data=data), data=data) as response:
+            if response.status != 200:
+                return CheckException(await response.text())
+
+            return response.status
 
     # Provided by "𝑰 𝑵 𝑻 𝑬 𝑹 𝑳 𝑼 𝑫 𝑬#4082"
     async def delete_account(self, password: str):
@@ -681,14 +627,16 @@ class Client(Callbacks, SocketHandler):
             - **Fail** : :meth:`Exceptions <aminofixasync.lib.util.exceptions>`
         """
 
-        data = json.dumps({
-            "deviceID": device.device_id,
+        data = dumps({
+            "deviceID": self.__device_id,
             "secret": f"0 {password}"
         })
 
-        async with self.session.post(f"{self.api}/g/s/account/delete-request", headers=await self.parse_headers(data=data), data=data) as response:
-            if response.status != 200: return exceptions.CheckException(await response.text())
-            else: return response.status
+        async with self._session.post(f"{API_URL}/g/s/account/delete-request", headers=await self._parse_headers(data=data), data=data) as response:
+            if response.status != 200:
+                return CheckException(await response.text())
+
+            return response.status
 
     async def change_password(self, email: str, password: str, code: str):
         """
@@ -705,7 +653,7 @@ class Client(Callbacks, SocketHandler):
             - **Fail** : :meth:`Exceptions <aminofixasync.lib.util.exceptions>`
         """
 
-        data = json.dumps({
+        data = dumps({
             "updateSecret": f"0 {password}",
             "emailValidationContext": {
                 "data": {
@@ -714,15 +662,17 @@ class Client(Callbacks, SocketHandler):
                 "type": 1,
                 "identity": email,
                 "level": 2,
-                "deviceID": device.device_id
+                "deviceID": self.__device_id
             },
             "phoneNumberValidationContext": None,
-            "deviceID": device.device_id
+            "deviceID": self.__device_id
         })
 
-        async with self.session.post(f"{self.api}/g/s/auth/reset-password", headers=await self.parse_headers(data=data), data=data) as response:
-            if response.status != 200: return exceptions.CheckException(await response.text())
-            else: return response.status
+        async with self._session.post(f"{API_URL}/g/s/auth/reset-password", headers=await self._parse_headers(data=data), data=data) as response:
+            if response.status != 200:
+                return CheckException(await response.text())
+
+            return response.status
 
     async def check_device(self, deviceId: str):
         """
@@ -736,7 +686,7 @@ class Client(Callbacks, SocketHandler):
 
             - **Fail** : :meth:`Exceptions <aminofixasync.lib.util.exceptions>`
         """
-        data = json.dumps({
+        data = dumps({
             "deviceID": deviceId,
             "bundleID": "com.narvii.amino.master",
             "clientType": 100,
@@ -746,14 +696,18 @@ class Client(Callbacks, SocketHandler):
             "timestamp": int(timestamp() * 1000)
         })
 
-        async with self.session.post(f"{self.api}/g/s/device", headers=await self.parse_headers(data=data), data=data) as response:
-            if response.status != 200: return exceptions.CheckException(await response.text())
-            else: return response.status
+        async with self._session.post(f"{API_URL}/g/s/device", headers=await self._parse_headers(data=data), data=data) as response:
+            if response.status != 200:
+                return CheckException(await response.text())
+
+            return response.status
 
     async def get_account_info(self):
-        async with self.session.get(f"{self.api}/g/s/account", headers=await self.parse_headers()) as response:
-            if response.status != 200: return exceptions.CheckException(await response.text())
-            else: return objects.UserProfile(json.loads(await response.text())["account"]).UserProfile
+        async with self._session.get(f"{API_URL}/g/s/account", headers=await self._parse_headers()) as response:
+            if response.status != 200:
+                return CheckException(await response.text())
+
+            return UserProfile(loads(await response.text())["account"]).UserProfile
 
     async def upload_media(self, file: BinaryIO, fileType: str):
         """
@@ -767,25 +721,27 @@ class Client(Callbacks, SocketHandler):
 
             - **Fail** : :meth:`Exceptions <aminofixasync.lib.util.exceptions>`
         """
-        if fileType == "audio":
-            t = "audio/aac"
-        elif fileType == "image":
-            t = "image/jpg"
-        else: raise exceptions.SpecifyType(fileType)
+        type_from_map = MEDIA_TYPES_MAP.get(fileType)
+        if not type_from_map:
+            raise SpecifyType(fileType)
 
         data = file.read()
 
-        async with self.session.post(f"{self.api}/g/s/media/upload", headers=headers.ApisHeaders(type=t, data=data, deviceId=self.device_id).headers, data=data) as response:
-            if response.status != 200: return exceptions.CheckException(await response.text())
-            else: return json.loads(await response.text())["mediaValue"]
+        async with self._session.post(f"{API_URL}/g/s/media/upload", headers=ApisHeaders(type=type_from_map, data=data, deviceId=self.__device_id).headers, data=data) as response:
+            if response.status != 200:
+                return CheckException(await response.text())
+
+            return loads(await response.text())["mediaValue"]
 
     def handle_socket_message(self, data):
         return self.resolve(data)
 
     async def get_eventlog(self, language: str = "en"):
-        async with self.session.get(f"{self.api}/g/s/eventlog/profile?language={language}", headers=await self.parse_headers()) as response:
-            if response.status != 200: return exceptions.CheckException(await response.text())
-            else: return json.loads(await response.text())
+        async with self._session.get(f"{API_URL}/g/s/eventlog/profile?language={language}", headers=await self._parse_headers()) as response:
+            if response.status != 200:
+                return CheckException(await response.text())
+
+            return loads(await response.text())
 
     async def sub_clients(self, start: int = 0, size: int = 25):
         """
@@ -796,22 +752,22 @@ class Client(Callbacks, SocketHandler):
             - *size* : Size of the list.
 
         **Returns**
-            - **Success** : :meth:`Community List <aminofixasync.lib.util.objects.CommunityList>`
+            - **Success** : :meth:`Community List <aminofixasync.lib.util.CommunityList>`
 
             - **Fail** : :meth:`Exceptions <aminofixasync.lib.util.exceptions>`
         """
-        if not self.authenticated: raise exceptions.NotLoggedIn()
+        async with self._session.get(f"{API_URL}/g/s/community/joined?v=1&start={start}&size={size}", headers=await self._parse_headers()) as response:
+            if response.status != 200:
+                return CheckException(await response.text())
 
-        async with self.session.get(f"{self.api}/g/s/community/joined?v=1&start={start}&size={size}", headers=await self.parse_headers()) as response:
-            if response.status != 200: return exceptions.CheckException(await response.text())
-            else: return objects.CommunityList(json.loads(await response.text())["communityList"]).CommunityList
+            return CommunityList(loads(await response.text())["communityList"]).CommunityList
 
     async def sub_clients_profile(self, start: int = 0, size: int = 25):
-        if not self.authenticated: raise exceptions.NotLoggedIn()
+        async with self._session.get(f"{API_URL}/g/s/community/joined?v=1&start={start}&size={size}", headers=await self._parse_headers()) as response:
+            if response.status != 200:
+                return CheckException(await response.text())
 
-        async with self.session.get(f"{self.api}/g/s/community/joined?v=1&start={start}&size={size}", headers=await self.parse_headers()) as response:
-            if response.status != 200: return exceptions.CheckException(await response.text())
-            else: return json.loads(await response.text())["communityList"]
+            return loads(await response.text())["communityList"]
 
     async def get_user_info(self, userId: str):
         """
@@ -821,197 +777,15 @@ class Client(Callbacks, SocketHandler):
             - **userId** : ID of the User.
 
         **Returns**
-            - **Success** : :meth:`User Object <aminofixasync.lib.util.objects.UserProfile>`
+            - **Success** : :meth:`User Object <aminofixasync.lib.util.UserProfile>`
 
             - **Fail** : :meth:`Exceptions <aminofixasync.lib.util.exceptions>`
         """
-        async with self.session.get(f"{self.api}/g/s/user-profile/{userId}", headers=await self.parse_headers()) as response:
-            if response.status != 200: return exceptions.CheckException(await response.text())
-            else: return objects.UserProfile(json.loads(await response.text())["userProfile"]).UserProfile
+        async with self._session.get(f"{API_URL}/g/s/user-profile/{userId}", headers=await self._parse_headers()) as response:
+            if response.status != 200:
+                return CheckException(await response.text())
 
-    async def get_chat_threads(self, start: int = 0, size: int = 25):
-        """
-        List of Chats the account is in.
-
-        **Parameters**
-            - *start* : Where to start the list.
-            - *size* : Size of the list.
-
-        **Returns**
-            - **Success** : :meth:`Chat List <aminofixasync.lib.util.objects.ThreadList>`
-
-            - **Fail** : :meth:`Exceptions <aminofixasync.lib.util.exceptions>`
-        """
-        async with self.session.get(f"{self.api}/g/s/chat/thread?type=joined-me&start={start}&size={size}", headers=await self.parse_headers()) as response:
-            if response.status != 200: return exceptions.CheckException(await response.text())
-            else: return objects.ThreadList(json.loads(await response.text())["threadList"]).ThreadList
-
-    async def get_chat_thread(self, chatId: str):
-        """
-        Get the Chat Object from an Chat ID.
-
-        **Parameters**
-            - **chatId** : ID of the Chat.
-
-        **Returns**
-            - **Success** : :meth:`Chat Object <aminofixasync.lib.util.objects.Thread>`
-
-            - **Fail** : :meth:`Exceptions <aminofixasync.lib.util.exceptions>`
-        """
-        async with self.session.get(f"{self.api}/g/s/chat/thread/{chatId}", headers=await self.parse_headers()) as response:
-            if response.status != 200: return exceptions.CheckException(await response.text())
-            else: return objects.Thread(json.loads(await response.text())["thread"]).Thread
-
-    async def get_chat_users(self, chatId: str, start: int = 0, size: int = 25):
-        async with self.session.get(f"{self.api}/g/s/chat/thread/{chatId}/member?start={start}&size={size}&type=default&cv=1.2", headers=await self.parse_headers()) as response:
-            if response.status != 200: return exceptions.CheckException(await response.text())
-            else: return objects.UserProfileList(json.loads(await response.text())["memberList"]).UserProfileList
-
-    async def join_chat(self, chatId: str):
-        """
-        Join an Chat.
-
-        **Parameters**
-            - **chatId** : ID of the Chat.
-
-        **Returns**
-            - **Success** : 200 (int)
-
-            - **Fail** : :meth:`Exceptions <aminofixasync.lib.util.exceptions>`
-        """
-        async with self.session.post(f"{self.api}/g/s/chat/thread/{chatId}/member/{self.userId}", headers=await self.parse_headers(type="application/x-www-form-urlencoded")) as response:
-            if response.status != 200: return exceptions.CheckException(await response.text())
-            else: return response.status
-
-    async def leave_chat(self, chatId: str):
-        """
-        Leave an Chat.
-
-        **Parameters**
-            - **chatId** : ID of the Chat.
-
-        **Returns**
-            - **Success** : 200 (int)
-
-            - **Fail** : :meth:`Exceptions <aminofixasync.lib.util.exceptions>`
-        """
-        async with self.session.delete(f"{self.api}/g/s/chat/thread/{chatId}/member/{self.userId}", headers=await self.parse_headers()) as response:
-            if response.status != 200: return exceptions.CheckException(await response.text())
-            else: return response.status
-
-    async def start_chat(self, userId: Union[str, list], message: str, title: str = None, content: str = None, isGlobal: bool = False, publishToGlobal: bool = False):
-        """
-        Start an Chat with an User or List of Users.
-
-        **Parameters**
-            - **userId** : ID of the User or List of User IDs.
-            - **message** : Starting Message.
-            - **title** : Title of Group Chat.
-            - **content** : Content of Group Chat.
-            - **isGlobal** : If Group Chat is Global.
-            - **publishToGlobal** : If Group Chat should show in Global.
-
-        **Returns**
-            - **Success** : 200 (int)
-
-            - **Fail** : :meth:`Exceptions <aminofixasync.lib.util.exceptions>`
-        """
-        if isinstance(userId, str): userIds = [userId]
-        elif isinstance(userId, list): userIds = userId
-        else: raise exceptions.WrongType()
-
-        data = {
-            "title": title,
-            "inviteeUids": userIds,
-            "initialMessageContent": message,
-            "content": content,
-            "timestamp": int(timestamp() * 1000)
-        }
-
-        if isGlobal is True: data["type"] = 2; data["eventSource"] = "GlobalComposeMenu"
-        else: data["type"] = 0
-
-        if publishToGlobal is True: data["publishToGlobal"] = 1
-        else: data["publishToGlobal"] = 0
-
-        data = json.dumps(data)
-
-        async with self.session.post(f"{self.api}/g/s/chat/thread", headers=await self.parse_headers(data=data), data=data) as response:
-            if response.status != 200: return exceptions.CheckException(await response.text())
-            else: return response.status
-
-    async def invite_to_chat(self, userId: Union[str, list], chatId: str):
-        """
-        Invite a User or List of Users to a Chat.
-
-        **Parameters**
-            - **userId** : ID of the User or List of User IDs.
-            - **chatId** : ID of the Chat.
-
-        **Returns**
-            - **Success** : 200 (int)
-
-            - **Fail** : :meth:`Exceptions <aminofixasync.lib.util.exceptions>`
-        """
-        if isinstance(userId, str): userIds = [userId]
-        elif isinstance(userId, list): userIds = userId
-        else: raise exceptions.WrongType(type(userId))
-
-        data = json.dumps({
-            "uids": userIds,
-            "timestamp": int(timestamp() * 1000)
-        })
-
-        async with self.session.post(f"{self.api}/g/s/chat/thread/{chatId}/member/invite", headers=await self.parse_headers(data=data), data=data) as response:
-            if response.status != 200: return exceptions.CheckException(await response.text())
-            else: return response.status
-
-    async def kick(self, userId: str, chatId: str, allowRejoin: bool = True):
-        if allowRejoin: allowRejoin = 1
-        if not allowRejoin: allowRejoin = 0
-
-        async with self.session.delete(f"{self.api}/g/s/chat/thread/{chatId}/member/{userId}?allowRejoin={allowRejoin}", headers=await self.parse_headers()) as response:
-            if response.status != 200: return exceptions.CheckException(await response.text())
-            else: return response.status
-
-    async def get_chat_messages(self, chatId: str, size: int = 25, pageToken: str = None):
-        """
-        List of Messages from an Chat.
-
-        **Parameters**
-            - **chatId** : ID of the Chat.
-            - *size* : Size of the list.
-            - *size* : Size of the list.
-            - *pageToken* : Next Page Token.
-
-        **Returns**
-            - **Success** : :meth:`Message List <aminofixasync.lib.util.objects.MessageList>`
-
-            - **Fail** : :meth:`Exceptions <aminofixasync.lib.util.exceptions>`
-        """
-        if pageToken is not None: url = f"{self.api}/g/s/chat/thread/{chatId}/message?v=2&pagingType=t&pageToken={pageToken}&size={size}"
-        else: url = f"{self.api}/g/s/chat/thread/{chatId}/message?v=2&pagingType=t&size={size}"
-
-        async with self.session.get(url, headers=await self.parse_headers()) as response:
-            if response.status != 200: return exceptions.CheckException(await response.text())
-            else: return objects.GetMessages(json.loads(await response.text())).GetMessages
-
-    async def get_message_info(self, chatId: str, messageId: str):
-        """
-        Information of an Message from an Chat.
-
-        **Parameters**
-            - **chatId** : ID of the Chat.
-            - **messageId** : ID of the Message.
-
-        **Returns**
-            - **Success** : :meth:`Message Object <aminofixasync.lib.util.objects.Message>`
-
-            - **Fail** : :meth:`Exceptions <aminofixasync.lib.util.exceptions>`
-        """
-        async with self.session.get(f"{self.api}/g/s/chat/thread/{chatId}/message/{messageId}", headers=await self.parse_headers()) as response:
-            if response.status != 200: return exceptions.CheckException(await response.text())
-            else: return objects.Message(json.loads(await response.text())["message"]).Message
+            return UserProfile(loads(await response.text())["userProfile"]).UserProfile
 
     async def get_community_info(self, comId: str):
         """
@@ -1021,13 +795,15 @@ class Client(Callbacks, SocketHandler):
             - **comId** : ID of the Community.
 
         **Returns**
-            - **Success** : :meth:`Community Object <aminofixasync.lib.util.objects.Community>`
+            - **Success** : :meth:`Community Object <aminofixasync.lib.util.Community>`
 
             - **Fail** : :meth:`Exceptions <aminofixasync.lib.util.exceptions>`
         """
-        async with self.session.get(f"{self.api}/g/s-x{comId}/community/info?withInfluencerList=1&withTopicList=true&influencerListOrderStrategy=fansCount", headers=await self.parse_headers()) as response:
-            if response.status != 200: return exceptions.CheckException(await response.text())
-            else: return objects.Community(json.loads(await response.text())["community"]).Community
+        async with self._session.get(f"{API_URL}/g/s-x{comId}/community/info?withInfluencerList=1&withTopicList=true&influencerListOrderStrategy=fansCount", headers=await self._parse_headers()) as response:
+            if response.status != 200:
+                return CheckException(await response.text())
+
+            return Community(loads(await response.text())["community"]).Community
 
     async def search_community(self, aminoId: str):
         """
@@ -1037,16 +813,20 @@ class Client(Callbacks, SocketHandler):
             - **aminoId** : Amino ID of the Community.
 
         **Returns**
-            - **Success** : :meth:`Community List <aminofixasync.lib.util.objects.CommunityList>`
+            - **Success** : :meth:`Community List <aminofixasync.lib.util.CommunityList>`
 
             - **Fail** : :meth:`Exceptions <aminofixasync.lib.util.exceptions>`
         """
-        async with self.session.get(f"{self.api}/g/s/search/amino-id-and-link?q={aminoId}", headers=await self.parse_headers()) as response:
-            if response.status != 200: return exceptions.CheckException(await response.text())
-            else:
-                response = json.loads(await response.text())["resultList"]
-                if len(response) == 0: raise exceptions.CommunityNotFound(aminoId)
-                else: return objects.CommunityList([com["refObject"] for com in response]).CommunityList
+        async with self._session.get(f"{API_URL}/g/s/search/amino-id-and-link?q={aminoId}", headers=await self._parse_headers()) as response:
+            if response.status != 200:
+                return CheckException(await response.text())
+
+           
+            response = loads(await response.text())["resultList"]
+            if len(response) == 0:
+                raise CommunityNotFound(aminoId)
+            
+            return CommunityList([com["refObject"] for com in response]).CommunityList
 
     async def get_user_following(self, userId: str, start: int = 0, size: int = 25):
         """
@@ -1058,13 +838,15 @@ class Client(Callbacks, SocketHandler):
             - *size* : Size of the list.
 
         **Returns**
-            - **Success** : :meth:`User List <aminofixasync.lib.util.objects.UserProfileList>`
+            - **Success** : :meth:`User List <aminofixasync.lib.util.UserProfileList>`
 
             - **Fail** : :meth:`Exceptions <aminofixasync.lib.util.exceptions>`
         """
-        async with self.session.get(f"{self.api}/g/s/user-profile/{userId}/joined?start={start}&size={size}", headers=await self.parse_headers()) as response:
-            if response.status != 200: return exceptions.CheckException(await response.text())
-            else: return objects.UserProfileList(json.loads(await response.text())["userProfileList"]).UserProfileList
+        async with self._session.get(f"{API_URL}/g/s/user-profile/{userId}/joined?start={start}&size={size}", headers=await self._parse_headers()) as response:
+            if response.status != 200:
+                return CheckException(await response.text())
+
+            return UserProfileList(loads(await response.text())["userProfileList"]).UserProfileList
 
     async def get_user_followers(self, userId: str, start: int = 0, size: int = 25):
         """
@@ -1076,31 +858,15 @@ class Client(Callbacks, SocketHandler):
             - *size* : Size of the list.
 
         **Returns**
-            - **Success** : :meth:`User List <aminofixasync.lib.util.objects.UserProfileList>`
+            - **Success** : :meth:`User List <aminofixasync.lib.util.UserProfileList>`
 
             - **Fail** : :meth:`Exceptions <aminofixasync.lib.util.exceptions>`
         """
-        async with self.session.get(f"{self.api}/g/s/user-profile/{userId}/member?start={start}&size={size}", headers=await self.parse_headers()) as response:
-            if response.status != 200: return exceptions.CheckException(await response.text())
-            else: return objects.UserProfileList(json.loads(await response.text())["userProfileList"]).UserProfileList
+        async with self._session.get(f"{API_URL}/g/s/user-profile/{userId}/member?start={start}&size={size}", headers=await self._parse_headers()) as response:
+            if response.status != 200:
+                return CheckException(await response.text())
 
-    async def get_user_visitors(self, userId: str, start: int = 0, size: int = 25):
-        """
-        List of Users that Visited the User.
-
-        **Parameters**
-            - **userId** : ID of the User.
-            - *start* : Where to start the list.
-            - *size* : Size of the list.
-
-        **Returns**
-            - **Success** : :meth:`Visitors List <aminofixasync.lib.util.objects.VisitorsList>`
-
-            - **Fail** : :meth:`Exceptions <aminofixasync.lib.util.exceptions>`
-        """
-        async with self.session.get(f"{self.api}/g/s/user-profile/{userId}/visitors?start={start}&size={size}", headers=await self.parse_headers()) as response:
-            if response.status != 200: return exceptions.CheckException(await response.text())
-            else: return objects.VisitorsList(json.loads(await response.text())).VisitorsList
+            return UserProfileList(loads(await response.text())["userProfileList"]).UserProfileList
 
     async def get_blocked_users(self, start: int = 0, size: int = 25):
         """
@@ -1111,50 +877,15 @@ class Client(Callbacks, SocketHandler):
             - *size* : Size of the list.
 
         **Returns**
-            - **Success** : :meth:`Users List <aminofixasync.lib.util.objects.UserProfileList>`
+            - **Success** : :meth:`Users List <aminofixasync.lib.util.UserProfileList>`
 
             - **Fail** : :meth:`Exceptions <aminofixasync.lib.util.exceptions>`
         """
-        async with self.session.get(f"{self.api}/g/s/block?start={start}&size={size}", headers=await self.parse_headers()) as response:
-            if response.status != 200: return exceptions.CheckException(await response.text())
-            else: return objects.UserProfileList(json.loads(await response.text())["userProfileList"]).UserProfileList
+        async with self._session.get(f"{API_URL}/g/s/block?start={start}&size={size}", headers=await self._parse_headers()) as response:
+            if response.status != 200:
+                return CheckException(await response.text())
 
-    async def get_blog_info(self, blogId: str = None, wikiId: str = None, quizId: str = None, fileId: str = None):
-        if blogId or quizId:
-            if quizId is not None: blogId = quizId
-
-            async with self.session.get(f"{self.api}/g/s/blog/{blogId}", headers=await self.parse_headers()) as response:
-                if response.status != 200: return exceptions.CheckException(await response.text())
-                else: return objects.GetBlogInfo(json.loads(await response.text())).GetBlogInfo
-
-        elif wikiId:
-            async with self.session.get(f"{self.api}/g/s/item/{wikiId}", headers=await self.parse_headers()) as response:
-                if response.status != 200: return exceptions.CheckException(await response.text())
-                else: return objects.GetWikiInfo(json.loads(await response.text())).GetWikiInfo
-
-        elif fileId:
-            async with self.session.get(f"{self.api}/g/s/shared-folder/files/{fileId}", headers=await self.parse_headers()) as response:
-                if response.status != 200: return exceptions.CheckException(await response.text())
-                else: return objects.SharedFolderFile(json.loads(await response.text())["file"]).SharedFolderFile
-
-        else: raise exceptions.SpecifyType()
-
-    async def get_blog_comments(self, blogId: str = None, wikiId: str = None, quizId: str = None, fileId: str = None, sorting: str = "newest", start: int = 0, size: int = 25):
-        if sorting == "newest": sorting = "newest"
-        elif sorting == "oldest": sorting = "oldest"
-        elif sorting == "top": sorting = "vote"
-        else: raise exceptions.WrongType(sorting)
-
-        if blogId or quizId:
-            if quizId is not None: blogId = quizId
-            url = f"{self.api}/g/s/blog/{blogId}/comment?sort={sorting}&start={start}&size={size}"
-        elif wikiId: url = f"{self.api}/g/s/item/{wikiId}/comment?sort={sorting}&start={start}&size={size}"
-        elif fileId: url = f"{self.api}/g/s/shared-folder/files/{fileId}/comment?sort={sorting}&start={start}&size={size}"
-        else: raise exceptions.SpecifyType()
-
-        async with self.session.get(url, headers=await self.parse_headers()) as response:
-            if response.status != 200: return exceptions.CheckException(await response.text())
-            else: return objects.CommentList(json.loads(await response.text())["commentList"]).CommentList
+            return UserProfileList(loads(await response.text())["userProfileList"]).UserProfileList
 
     async def get_blocker_users(self, start: int = 0, size: int = 25):
         """
@@ -1169,9 +900,11 @@ class Client(Callbacks, SocketHandler):
 
             - **Fail** : :meth:`Exceptions <aminofixasync.lib.util.exceptions>`
         """
-        async with self.session.get(f"{self.api}/g/s/block/full-list?start={start}&size={size}", headers=await self.parse_headers()) as response:
-            if response.status != 200: return exceptions.CheckException(await response.text())
-            else: return json.loads(await response.text())["blockerUidList"]
+        async with self._session.get(f"{API_URL}/g/s/block/full-list?start={start}&size={size}", headers=await self._parse_headers()) as response:
+            if response.status != 200:
+                return CheckException(await response.text())
+
+            return loads(await response.text())["blockerUidList"]
 
     async def get_wall_comments(self, userId: str, sorting: str, start: int = 0, size: int = 25):
         """
@@ -1185,18 +918,19 @@ class Client(Callbacks, SocketHandler):
             - *size* : Size of the list.
 
         **Returns**
-            - **Success** : :meth:`Comments List <aminofixasync.lib.util.objects.CommentList>`
+            - **Success** : :meth:`Comments List <aminofixasync.lib.util.CommentList>`
 
             - **Fail** : :meth:`Exceptions <aminofixasync.lib.util.exceptions>`
         """
-        if sorting.lower() == "newest": sorting = "newest"
-        elif sorting.lower() == "oldest": sorting = "oldest"
-        elif sorting.lower() == "top": sorting = "vote"
-        else: raise exceptions.WrongType(sorting)
+        sorting_type = COMMENTS_SORTING_MAP.get(sorting)
+        if not sorting_type:
+            raise WrongType(sorting)
 
-        async with self.session.get(f"{self.api}/g/s/user-profile/{userId}/g-comment?sort={sorting}&start={start}&size={size}", headers=await self.parse_headers()) as response:
-            if response.status != 200: return exceptions.CheckException(await response.text())
-            else: return objects.CommentList(json.loads(await response.text())["commentList"]).CommentList
+        async with self._session.get(f"{API_URL}/g/s/user-profile/{userId}/g-comment?sort={sorting}&start={start}&size={size}", headers=await self._parse_headers()) as response:
+            if response.status != 200:
+                return CheckException(await response.text())
+
+            return CommentList(loads(await response.text())["commentList"]).CommentList
 
     async def flag(self, reason: str, flagType: int, userId: str = None, blogId: str = None, wikiId: str = None, asGuest: bool = False):
         """
@@ -1215,337 +949,20 @@ class Client(Callbacks, SocketHandler):
 
             - **Fail** : :meth:`Exceptions <aminofixasync.lib.util.exceptions>`
         """
-        if reason is None: raise exceptions.ReasonNeeded
-        if flagType is None: raise exceptions.FlagTypeNeeded
 
-        data = {
+        data = dumps({
             "flagType": flagType,
             "message": reason,
-            "timestamp": int(timestamp() * 1000)
-        }
-
-        if userId:
-            data["objectId"] = userId
-            data["objectType"] = 0
-
-        elif blogId:
-            data["objectId"] = blogId
-            data["objectType"] = 1
-
-        elif wikiId:
-            data["objectId"] = wikiId
-            data["objectType"] = 2
-
-        else: raise exceptions.SpecifyType
-
-        if asGuest: flg = "g-flag"
-        else: flg = "flag"
-
-        data = json.dumps(data)
-
-        async with self.session.post(f"{self.api}/g/s/{flg}", headers=await self.parse_headers(data=data), data=data) as response:
-            if response.status != 200: return exceptions.CheckException(await response.text())
-            else: return response.status
-
-    async def send_message(self, chatId: str, message: str = None, messageType: int = 0, file: BinaryIO = None, fileType: str = None, replyTo: str = None, mentionUserIds: list = None, stickerId: str = None, embedId: str = None, embedType: int = None, embedLink: str = None, embedTitle: str = None, embedContent: str = None, embedImage: BinaryIO = None):
-        """
-        Send a Message to a Chat.
-
-        **Parameters**
-            - **message** : Message to be sent
-            - **chatId** : ID of the Chat.
-            - **file** : File to be sent.
-            - **fileType** : Type of the file.
-                - ``audio``, ``image``, ``gif``
-            - **messageType** : Type of the Message.
-            - **mentionUserIds** : List of User IDS to mention. '@' needed in the Message.
-            - **replyTo** : Message ID to reply to.
-            - **stickerId** : Sticker ID to be sent.
-            - **embedTitle** : Title of the Embed.
-            - **embedContent** : Content of the Embed.
-            - **embedLink** : Link of the Embed.
-            - **embedImage** : Image of the Embed.
-            - **embedId** : ID of the Embed.
-
-        **Returns**
-            - **Success** : 200 (int)
-
-            - **Fail** : :meth:`Exceptions <aminofixasync.lib.util.exceptions>`
-        """
-
-        if message is not None and file is None:
-            message = message.replace("<$", "‎‏").replace("$>", "‬‭")
-
-        mentions = []
-        if mentionUserIds:
-            for mention_uid in mentionUserIds:
-                mentions.append({"uid": mention_uid})
-
-        if embedImage:
-            embedImage = [[100, await self.upload_media(embedImage, "image"), None]]
-
-        data = {
-            "type": messageType,
-            "content": message,
-            "clientRefId": int(timestamp() / 10 % 1000000000),
-            "attachedObject": {
-                "objectId": embedId,
-                "objectType": embedType,
-                "link": embedLink,
-                "title": embedTitle,
-                "content": embedContent,
-                "mediaList": embedImage
-            },
-            "extensions": {"mentionedArray": mentions},
-            "timestamp": int(timestamp() * 1000)
-        }
-
-        if replyTo: data["replyMessageId"] = replyTo
-
-        if stickerId:
-            data["content"] = None
-            data["stickerId"] = stickerId
-            data["type"] = 3
-
-        if file:
-            data["content"] = None
-            if fileType == "audio":
-                data["type"] = 2
-                data["mediaType"] = 110
-
-            elif fileType == "image":
-                data["mediaType"] = 100
-                data["mediaUploadValueContentType"] = "image/jpg"
-                data["mediaUhqEnabled"] = True
-
-            elif fileType == "gif":
-                data["mediaType"] = 100
-                data["mediaUploadValueContentType"] = "image/gif"
-                data["mediaUhqEnabled"] = True
-
-            else: raise exceptions.SpecifyType()
-
-            data["mediaUploadValue"] = base64.b64encode(file.read()).decode()
-
-        data = json.dumps(data)
-
-        async with self.session.post(f"{self.api}/g/s/chat/thread/{chatId}/message", headers=await self.parse_headers(data=data), data=data) as response:
-            if response.status != 200: return exceptions.CheckException(await response.text())
-            else: return response.status
-
-    async def delete_message(self, chatId: str, messageId: str, asStaff: bool = False, reason: str = None):
-        """
-        Delete a Message from a Chat.
-
-        **Parameters**
-            - **messageId** : ID of the Message.
-            - **chatId** : ID of the Chat.
-            - **asStaff** : If execute as a Staff member (Leader or Curator).
-            - **reason** : Reason of the action to show on the Moderation History.
-
-        **Returns**
-            - **Success** : 200 (int)
-
-            - **Fail** : :meth:`Exceptions <aminofixasync.lib.util.exceptions>`
-        """
-        data = {
-            "adminOpName": 102,
-            "adminOpNote": {"content": reason},
-            "timestamp": int(timestamp() * 1000)
-        }
-
-        data = json.dumps(data)
-
-        if not asStaff:
-            async with self.session.delete(f"{self.api}/g/s/chat/thread/{chatId}/message/{messageId}", headers=await self.parse_headers()) as response:
-                if response.status != 200: return exceptions.CheckException(await response.text())
-                else: return response.status
-        else:
-            async with self.session.post(f"{self.api}/g/s/chat/thread/{chatId}/message/{messageId}/admin", headers=await self.parse_headers(data=data), data=data) as response:
-                if response.status != 200: return exceptions.CheckException(await response.text())
-                else: return response.status
-
-    async def mark_as_read(self, chatId: str, messageId: str):
-        """
-        Mark a Message from a Chat as Read.
-
-        **Parameters**
-            - **messageId** : ID of the Message.
-            - **chatId** : ID of the Chat.
-
-        **Returns**
-            - **Success** : 200 (int)
-
-            - **Fail** : :meth:`Exceptions <aminofixasync.lib.util.exceptions>`
-        """
-        data = json.dumps({
-            "messageId": messageId,
+            "objectId": userId,
+            "objectType": 0,
             "timestamp": int(timestamp() * 1000)
         })
 
-        async with self.session.post(f"{self.api}/g/s/chat/thread/{chatId}/mark-as-read", headers=await self.parse_headers(data=data), data=data) as response:
-            if response.status != 200: return exceptions.CheckException(await response.text())
-            else: return response.status
+        async with self._session.post(f"{API_URL}/g/s/{"g-flag" if asGuest else "flag"}", headers=await self._parse_headers(data=data), data=data) as response:
+            if response.status != 200:
+                return CheckException(await response.text())
 
-    async def edit_chat(self, chatId: str, doNotDisturb: bool = None, pinChat: bool = None, title: str = None, icon: str = None, backgroundImage: BinaryIO = None, content: str = None, announcement: str = None, coHosts: list = None, keywords: list = None, pinAnnouncement: bool = None, publishToGlobal: bool = None, canTip: bool = None, viewOnly: bool = None, canInvite: bool = None, fansOnly: bool = None):
-        """
-        Send a Message to a Chat.
-
-        **Parameters**
-            - **chatId** : ID of the Chat.
-            - **title** : Title of the Chat.
-            - **content** : Content of the Chat.
-            - **icon** : Icon of the Chat.
-            - **backgroundImage** : Background Image of the Chat.
-            - **announcement** : Announcement of the Chat.
-            - **pinAnnouncement** : If the Chat Announcement should Pinned or not.
-            - **coHosts** : List of User IDS to be Co-Host.
-            - **keywords** : List of Keywords of the Chat.
-            - **viewOnly** : If the Chat should be on View Only or not.
-            - **canTip** : If the Chat should be Tippable or not.
-            - **canInvite** : If the Chat should be Invitable or not.
-            - **fansOnly** : If the Chat should be Fans Only or not.
-            - **publishToGlobal** : If the Chat should show on Public Chats or not.
-            - **doNotDisturb** : If the Chat should Do Not Disturb or not.
-            - **pinChat** : If the Chat should Pinned or not.
-
-        **Returns**
-            - **Success** : 200 (int)
-
-            - **Fail** : :meth:`Exceptions <aminofixasync.lib.util.exceptions>`
-        """
-        data = {"timestamp": int(timestamp() * 1000)}
-
-        if title: data["title"] = title
-        if content: data["content"] = content
-        if icon: data["icon"] = icon
-        if keywords: data["keywords"] = keywords
-        if announcement: data["extensions"] = {"announcement": announcement}
-        if pinAnnouncement: data["extensions"] = {"pinAnnouncement": pinAnnouncement}
-        if fansOnly: data["extensions"] = {"fansOnly": fansOnly}
-
-        if publishToGlobal: data["publishToGlobal"] = 0
-        if not publishToGlobal: data["publishToGlobal"] = 1
-
-        res = []
-
-        if doNotDisturb is not None:
-            if doNotDisturb:
-                data = json.dumps({"alertOption": 2, "timestamp": int(timestamp() * 1000)})
-                async with self.session.post(f"{self.api}/g/s/chat/thread/{chatId}/member/{self.userId}/alert", headers=await self.parse_headers(data=data), data=data) as response:
-                    if response.status != 200: res.append(exceptions.CheckException(await response.text()))
-                    else: res.append(response.status)
-
-            if not doNotDisturb:
-                data = json.dumps({"alertOption": 1, "timestamp": int(timestamp() * 1000)})
-                async with self.session.post(f"{self.api}/g/s/chat/thread/{chatId}/member/{self.userId}/alert", headers=await self.parse_headers(data=data), data=data) as response:
-                    if response.status != 200: res.append(exceptions.CheckException(await response.text()))
-                    else: res.append(response.status)
-
-        if pinChat is not None:
-            if pinChat:
-                async with self.session.post(f"{self.api}/g/s/chat/thread/{chatId}/pin", headers=await self.parse_headers(data=data), data=data) as response:
-                    if response.status != 200: res.append(exceptions.CheckException(await response.text()))
-                    else: res.append(response.status)
-
-            if not pinChat:
-                async with self.session.post(f"{self.api}/g/s/chat/thread/{chatId}/unpin", headers=await self.parse_headers(data=data), data=data) as response:
-                    if response.status != 200: res.append(exceptions.CheckException(await response.text()))
-                    else: res.append(response.status)
-
-        if backgroundImage is not None:
-            data = json.dumps({"media": [100, await self.upload_media(backgroundImage, "image"), None], "timestamp": int(timestamp() * 1000)})
-            async with self.session.post(f"{self.api}/g/s/chat/thread/{chatId}/member/{self.userId}/background", headers=await self.parse_headers(data=data), data=data) as response:
-                if response.status != 200: res.append(exceptions.CheckException(await response.text()))
-                else: res.append(response.status)
-
-        if coHosts is not None:
-            data = json.dumps({"uidList": coHosts, "timestamp": int(timestamp() * 1000)})
-            async with self.session.post(f"{self.api}/g/s/chat/thread/{chatId}/co-host", headers=await self.parse_headers(data=data), data=data) as response:
-                if response.status != 200: res.append(exceptions.CheckException(await response.text()))
-                else: res.append(response.status)
-
-        if viewOnly is not None:
-            if viewOnly:
-                async with self.session.post(f"{self.api}/g/s/chat/thread/{chatId}/view-only/enable", headers=await self.parse_headers(type="application/x-www-form-urlencoded")) as response:
-                    if response.status != 200: res.append(exceptions.CheckException(await response.text()))
-                    else: res.append(response.status)
-
-            if not viewOnly:
-                async with self.session.post(f"{self.api}/g/s/chat/thread/{chatId}/view-only/disable", headers=await self.parse_headers(type="application/x-www-form-urlencoded")) as response:
-                    if response.status != 200: res.append(exceptions.CheckException(await response.text()))
-                    else: res.append(response.status)
-
-        if canInvite is not None:
-            if canInvite:
-                async with self.session.post(f"{self.api}/g/s/chat/thread/{chatId}/members-can-invite/enable", headers=await self.parse_headers(data=data), data=data) as response:
-                    if response.status != 200: res.append(exceptions.CheckException(await response.text()))
-                    else: res.append(response.status)
-
-            if not canInvite:
-                async with self.session.post(f"{self.api}/g/s/chat/thread/{chatId}/members-can-invite/disable", headers=await self.parse_headers(data=data), data=data) as response:
-                    if response.status != 200: res.append(exceptions.CheckException(await response.text()))
-                    else: res.append(response.status)
-
-        if canTip is not None:
-            if canTip:
-                async with self.session.post(f"{self.api}/g/s/chat/thread/{chatId}/tipping-perm-status/enable", headers=await self.parse_headers(data=data), data=data) as response:
-                    if response.status != 200: res.append(exceptions.CheckException(await response.text()))
-                    else: res.append(response.status)
-
-            if not canTip:
-                async with self.session.post(f"{self.api}/g/s/chat/thread/{chatId}/tipping-perm-status/disable", headers=await self.parse_headers(data=data), data=data) as response:
-                    if response.status != 200: res.append(exceptions.CheckException(await response.text()))
-                    else: res.append(response.status)
-
-        data = json.dumps(data)
-
-        async with self.session.post(f"{self.api}/g/s/chat/thread/{chatId}", headers=await self.parse_headers(data=data), data=data) as response:
-            if response.status != 200: res.append(exceptions.CheckException(await response.text()))
-            else: res.append(response.status)
-
-        return res
-
-    async def visit(self, userId: str):
-        """
-        Visit an User.
-
-        **Parameters**
-            - **userId** : ID of the User.
-
-        **Returns**
-            - **Success** : 200 (int)
-
-            - **Fail** : :meth:`Exceptions <aminofixasync.lib.util.exceptions>`
-        """
-        async with self.session.get(f"{self.api}/g/s/user-profile/{userId}?action=visit", headers=await self.parse_headers()) as response:
-            if response.status != 200: return exceptions.CheckException(await response.text())
-            else: return response.status
-
-    async def send_coins(self, coins: int, blogId: str = None, chatId: str = None, objectId: str = None, transactionId: str = None):
-        url = None
-        if transactionId is None: transactionId = str(uuid4())
-
-        data = {
-            "coins": coins,
-            "tippingContext": {"transactionId": transactionId},
-            "timestamp": int(timestamp() * 1000)
-        }
-
-        if blogId is not None: url = f"{self.api}/g/s/blog/{blogId}/tipping"
-        if chatId is not None: url = f"{self.api}/g/s/chat/thread/{chatId}/tipping"
-        if objectId is not None:
-            data["objectId"] = objectId
-            data["objectType"] = 2
-            url = f"{self.api}/g/s/tipping"
-
-        if url is None: raise exceptions.SpecifyType()
-
-        data = json.dumps(data)
-
-        async with self.session.post(url, headers=await self.parse_headers(data=data), data=data) as response:
-            if response.status != 200: return exceptions.CheckException(await response.text())
-            else: return response.status
+            return response.status
 
     async def follow(self, userId: Union[str, list]):
         """
@@ -1560,18 +977,20 @@ class Client(Callbacks, SocketHandler):
             - **Fail** : :meth:`Exceptions <aminofixasync.lib.util.exceptions>`
         """
         if isinstance(userId, str):
-            async with self.session.post(f"{self.api}/g/s/user-profile/{userId}/member", headers=await self.parse_headers()) as response:
-                if response.status != 200: return exceptions.CheckException(await response.text())
-                else: return response.status
+            async with self._session.post(f"{API_URL}/g/s/user-profile/{userId}/member", headers=await self._parse_headers()) as response:
+                if response.status != 200:
+                    return CheckException(await response.text())
+
+                return response.status
 
         elif isinstance(userId, list):
-            data = json.dumps({"targetUidList": userId, "timestamp": int(timestamp() * 1000)})
+            data = dumps({"targetUidList": userId, "timestamp": int(timestamp() * 1000)})
 
-            async with self.session.post(f"{self.api}/g/s/user-profile/{self.userId}/joined", headers=await self.parse_headers(data=data), data=data) as response:
-                if response.status != 200: return exceptions.CheckException(await response.text())
-                else: return response.status
+            async with self._session.post(f"{API_URL}/g/s/user-profile/{self.userId}/joined", headers=await self._parse_headers(data=data), data=data) as response:
+                if response.status != 200:
+                    return CheckException(await response.text())
 
-        else: raise exceptions.WrongType(type(userId))
+                return response.status
 
     async def unfollow(self, userId: str):
         """
@@ -1585,9 +1004,11 @@ class Client(Callbacks, SocketHandler):
 
             - **Fail** : :meth:`Exceptions <aminofixasync.lib.util.exceptions>`
         """
-        async with self.session.delete(f"{self.api}/g/s/user-profile/{userId}/member/{self.userId}", headers=await self.parse_headers()) as response:
-            if response.status != 200: return exceptions.CheckException(await response.text())
-            else: return response.status
+        async with self._session.delete(f"{API_URL}/g/s/user-profile/{userId}/member/{self.userId}", headers=await self._parse_headers()) as response:
+            if response.status != 200:
+                return CheckException(await response.text())
+
+            return response.status
 
     async def block(self, userId: str):
         """
@@ -1601,9 +1022,11 @@ class Client(Callbacks, SocketHandler):
 
             - **Fail** : :meth:`Exceptions <aminofixasync.lib.util.exceptions>`
         """
-        async with self.session.post(f"{self.api}/g/s/block/{userId}", headers=await self.parse_headers()) as response:
-            if response.status != 200: return exceptions.CheckException(await response.text())
-            else: return response.status
+        async with self._session.post(f"{API_URL}/g/s/block/{userId}", headers=await self._parse_headers()) as response:
+            if response.status != 200:
+                return CheckException(await response.text())
+
+            return response.status
 
     async def unblock(self, userId: str):
         """
@@ -1617,9 +1040,11 @@ class Client(Callbacks, SocketHandler):
 
             - **Fail** : :meth:`Exceptions <aminofixasync.lib.util.exceptions>`
         """
-        async with self.session.delete(f"{self.api}/g/s/block/{userId}", headers=await self.parse_headers()) as response:
-            if response.status != 200: return exceptions.CheckException(await response.text())
-            else: return response.status
+        async with self._session.delete(f"{API_URL}/g/s/block/{userId}", headers=await self._parse_headers()) as response:
+            if response.status != 200:
+                return CheckException(await response.text())
+
+            return response.status
 
     async def join_community(self, comId: str, invitationCode: str = None):
         """
@@ -1635,14 +1060,17 @@ class Client(Callbacks, SocketHandler):
             - **Fail** : :meth:`Exceptions <aminofixasync.lib.util.exceptions>`
         """
         data = {}
-        if invitationCode: data["invitationId"] = (await self.link_identify(invitationCode))["invitation"]["invitationId"]
+        if invitationCode:
+            data["invitationId"] = (await self.link_identify(invitationCode))["invitation"]["invitationId"]
         
         data["timestamp"] = int(timestamp() * 1000)
-        data = json.dumps(data)
+        data = dumps(data)
 
-        async with self.session.post(f"{self.api}/x{comId}/s/community/join", headers=await self.parse_headers(data=data), data=data) as response:
-            if response.status != 200: return exceptions.CheckException(await response.text())
-            else: return response.status
+        async with self._session.post(f"{API_URL}/x{comId}/s/community/join", headers=await self._parse_headers(data=data), data=data) as response:
+            if response.status != 200:
+                return CheckException(await response.text())
+
+            return response.status
 
     async def request_join_community(self, comId: str, message: str = None):
         """
@@ -1657,11 +1085,13 @@ class Client(Callbacks, SocketHandler):
 
             - **Fail** : :meth:`Exceptions <aminofixasync.lib.util.exceptions>`
         """
-        data = json.dumps({"message": message, "timestamp": int(timestamp() * 1000)})
+        data = dumps({"message": message, "timestamp": int(timestamp() * 1000)})
 
-        async with self.session.post(f"{self.api}/x{comId}/s/community/membership-request", headers=await self.parse_headers(data=data), data=data) as response:
-            if response.status != 200: return exceptions.CheckException(await response.text())
-            else: return response.status
+        async with self._session.post(f"{API_URL}/x{comId}/s/community/membership-request", headers=await self._parse_headers(data=data), data=data) as response:
+            if response.status != 200:
+                return CheckException(await response.text())
+
+            return response.status
 
     async def leave_community(self, comId: str):
         """
@@ -1675,9 +1105,9 @@ class Client(Callbacks, SocketHandler):
 
             - **Fail** : :meth:`Exceptions <aminofixasync.lib.util.exceptions>`
         """
-        async with self.session.post(f"{self.api}/x{comId}/s/community/leave", headers=await self.parse_headers(type="application/x-www-form-urlencoded")) as response:
+        async with self._session.post(f"{API_URL}/x{comId}/s/community/leave", headers=await self._parse_headers(type="application/x-www-form-urlencoded")) as response:
             if response.status != 200:
-                return exceptions.CheckException(await response.text())
+                return CheckException(await response.text())
             else:
                 return response.status
 
@@ -1695,10 +1125,8 @@ class Client(Callbacks, SocketHandler):
 
             - **Fail** : :meth:`Exceptions <aminofixasync.lib.util.exceptions>`
         """
-        if reason is None: raise exceptions.ReasonNeeded()
-        if flagType is None: raise exceptions.FlagTypeNeeded()
 
-        data = json.dumps({
+        data = dumps({
             "objectId": comId,
             "objectType": 16,
             "flagType": flagType,
@@ -1706,12 +1134,11 @@ class Client(Callbacks, SocketHandler):
             "timestamp": int(timestamp() * 1000)
         })
 
-        if isGuest: flg = "g-flag"
-        else: flg = "flag"
+        async with self._session.post(f"{API_URL}/x{comId}/s/{"g-flag" if isGuest else "flag"}", headers=await self._parse_headers(data=data), data=data) as response:
+            if response.status != 200:
+                return CheckException(await response.text())
 
-        async with self.session.post(f"{self.api}/x{comId}/s/{flg}", headers=await self.parse_headers(data=data), data=data) as response:
-            if response.status != 200: return exceptions.CheckException(await response.text())
-            else: return response.status
+            return response.status
 
     async def edit_profile(self, nickname: str = None, content: str = None, icon: BinaryIO = None, backgroundColor: str = None, backgroundImage: str = None, defaultBubbleId: str = None, fileType: str = "image"):
         """
@@ -1739,18 +1166,26 @@ class Client(Callbacks, SocketHandler):
             "timestamp": int(timestamp() * 1000)
         }
 
-        if nickname: data["nickname"] = nickname
-        if icon: data["icon"] = await self.upload_media(icon, fileType)
-        if content: data["content"] = content
-        if backgroundColor: data["extensions"] = {"style": {"backgroundColor": backgroundColor}}
-        if backgroundImage: data["extensions"] = {"style": {"backgroundMediaList": [[100, backgroundImage, None, None, None]]}}
-        if defaultBubbleId: data["extensions"] = {"defaultBubbleId": defaultBubbleId}
+        if nickname:
+            data["nickname"] = nickname
+        if icon:
+            data["icon"] = await self.upload_media(icon, fileType)
+        if content:
+            data["content"] = content
+        if backgroundColor:
+            data["extensions"] = {"style": {"backgroundColor": backgroundColor}}
+        if backgroundImage:
+            data["extensions"] = {"style": {"backgroundMediaList": [[100, backgroundImage, None, None, None]]}}
+        if defaultBubbleId:
+            data["extensions"] = {"defaultBubbleId": defaultBubbleId}
 
-        data = json.dumps(data)
+        data = dumps(data)
 
-        async with self.session.post(f"{self.api}/g/s/user-profile/{self.userId}", headers=await self.parse_headers(data=data), data=data) as response:
-            if response.status != 200: return exceptions.CheckException(await response.text())
-            else: return response.status
+        async with self._session.post(f"{API_URL}/g/s/user-profile/{self.userId}", headers=await self._parse_headers(data=data), data=data) as response:
+            if response.status != 200:
+                return CheckException(await response.text())
+
+            return response.status
 
     async def set_privacy_status(self, isAnonymous: bool = False, getNotifications: bool = False):
         """
@@ -1766,18 +1201,17 @@ class Client(Callbacks, SocketHandler):
             - **Fail** : :meth:`Exceptions <aminofixasync.lib.util.exceptions>`
         """
 
-        data = {"timestamp": int(timestamp() * 1000)}
+        data = dumps({
+            "timestamp": int(timestamp() * 1000),
+            "privacyMode": int(isAnonymous),
+            "notificationStatus": int(getNotifications)
+        })
 
-        if not isAnonymous: data["privacyMode"] = 1
-        if isAnonymous: data["privacyMode"] = 2
-        if not getNotifications: data["notificationStatus"] = 2
-        if getNotifications: data["privacyMode"] = 1
+        async with self._session.post(f"{API_URL}/g/s/account/visit-settings", headers=await self._parse_headers(data=data), data=data) as response:
+            if response.status != 200:
+                return CheckException(await response.text())
 
-        data = json.dumps(data)
-
-        async with self.session.post(f"{self.api}/g/s/account/visit-settings", headers=await self.parse_headers(data=data), data=data) as response:
-            if response.status != 200: return exceptions.CheckException(await response.text())
-            else: return response.status
+            return response.status
 
     async def set_amino_id(self, aminoId: str):
         """
@@ -1791,11 +1225,13 @@ class Client(Callbacks, SocketHandler):
 
             - **Fail** : :meth:`Exceptions <aminofixasync.lib.util.exceptions>`
         """
-        data = json.dumps({"aminoId": aminoId, "timestamp": int(timestamp() * 1000)})
+        data = dumps({"aminoId": aminoId, "timestamp": int(timestamp() * 1000)})
 
-        async with self.session.post(f"{self.api}/g/s/account/change-amino-id", headers=await self.parse_headers(data=data), data=data) as response:
-            if response.status != 200: return exceptions.CheckException(await response.text())
-            else: return response.status
+        async with self._session.post(f"{API_URL}/g/s/account/change-amino-id", headers=await self._parse_headers(data=data), data=data) as response:
+            if response.status != 200:
+                return CheckException(await response.text())
+
+            return response.status
 
     async def get_linked_communities(self, userId: str):
         """
@@ -1805,13 +1241,15 @@ class Client(Callbacks, SocketHandler):
             - **userId** : ID of the User.
 
         **Returns**
-            - **Success** : :meth:`Community List <aminofixasync.lib.util.objects.CommunityList>`
+            - **Success** : :meth:`Community List <aminofixasync.lib.util.CommunityList>`
 
             - **Fail** : :meth:`Exceptions <aminofixasync.lib.util.exceptions>`
         """
-        async with self.session.get(f"{self.api}/g/s/user-profile/{userId}/linked-community", headers=await self.parse_headers()) as response:
-            if response.status != 200: return exceptions.CheckException(await response.text())
-            else: return objects.CommunityList(json.loads(await response.text())["linkedCommunityList"]).CommunityList
+        async with self._session.get(f"{API_URL}/g/s/user-profile/{userId}/linked-community", headers=await self._parse_headers()) as response:
+            if response.status != 200:
+                return CheckException(await response.text())
+
+            return CommunityList(loads(await response.text())["linkedCommunityList"]).CommunityList
 
     async def get_unlinked_communities(self, userId: str):
         """
@@ -1821,13 +1259,15 @@ class Client(Callbacks, SocketHandler):
             - **userId** : ID of the User.
 
         **Returns**
-            - **Success** : :meth:`Community List <aminofixasync.lib.util.objects.CommunityList>`
+            - **Success** : :meth:`Community List <aminofixasync.lib.util.CommunityList>`
 
             - **Fail** : :meth:`Exceptions <aminofixasync.lib.util.exceptions>`
         """
-        async with self.session.get(f"{self.api}/g/s/user-profile/{userId}/linked-community", headers=await self.parse_headers()) as response:
-            if response.status != 200: return exceptions.CheckException(await response.text())
-            else: return objects.CommunityList(json.loads(await response.text())["unlinkedCommunityList"]).CommunityList
+        async with self._session.get(f"{API_URL}/g/s/user-profile/{userId}/linked-community", headers=await self._parse_headers()) as response:
+            if response.status != 200:
+                return CheckException(await response.text())
+
+            return CommunityList(loads(await response.text())["unlinkedCommunityList"]).CommunityList
 
     async def reorder_linked_communities(self, comIds: list):
         """
@@ -1841,11 +1281,13 @@ class Client(Callbacks, SocketHandler):
 
             - **Fail** : :meth:`Exceptions <aminofixasync.lib.util.exceptions>`
         """
-        data = json.dumps({"ndcIds": comIds, "timestamp": int(timestamp() * 1000)})
+        data = dumps({"ndcIds": comIds, "timestamp": int(timestamp() * 1000)})
 
-        async with self.session.post(f"{self.api}/g/s/user-profile/{self.userId}/linked-community/reorder", headers=await self.parse_headers(data=data), data=data) as response:
-            if response.status != 200: return exceptions.CheckException(await response.text())
-            else: return response.status
+        async with self._session.post(f"{API_URL}/g/s/user-profile/{self.userId}/linked-community/reorder", headers=await self._parse_headers(data=data), data=data) as response:
+            if response.status != 200:
+                return CheckException(await response.text())
+
+            return response.status
 
     async def add_linked_community(self, comId: str):
         """
@@ -1859,9 +1301,11 @@ class Client(Callbacks, SocketHandler):
 
             - **Fail** : :meth:`Exceptions <aminofixasync.lib.util.exceptions>`
         """
-        async with self.session.post(f"{self.api}/g/s/user-profile/{self.userId}/linked-community/{comId}", headers=await self.parse_headers()) as response:
-            if response.status != 200: return exceptions.CheckException(await response.text())
-            else: return response.status
+        async with self._session.post(f"{API_URL}/g/s/user-profile/{self.userId}/linked-community/{comId}", headers=await self._parse_headers()) as response:
+            if response.status != 200:
+                return CheckException(await response.text())
+
+            return response.status
 
     async def remove_linked_community(self, comId: str):
         """
@@ -1875,11 +1319,13 @@ class Client(Callbacks, SocketHandler):
 
             - **Fail** : :meth:`Exceptions <aminofixasync.lib.util.exceptions>`
         """
-        async with self.session.delete(f"{self.api}/g/s/user-profile/{self.userId}/linked-community/{comId}", headers=await self.parse_headers()) as response:
-            if response.status != 200: return exceptions.CheckException(await response.text())
-            else: return response.status
+        async with self._session.delete(f"{API_URL}/g/s/user-profile/{self.userId}/linked-community/{comId}", headers=await self._parse_headers()) as response:
+            if response.status != 200:
+                return CheckException(await response.text())
 
-    async def comment(self, message: str, userId: str = None, blogId: str = None, wikiId: str = None, replyTo: str = None):
+            return response.status
+
+    async def comment(self, message: str, userId: str = None, replyTo: str = None):
         """
         Comment on a User's Wall, Blog or Wiki.
 
@@ -1895,208 +1341,88 @@ class Client(Callbacks, SocketHandler):
 
             - **Fail** : :meth:`Exceptions <aminofixasync.lib.util.exceptions>`
         """
-        if message is None: raise exceptions.MessageNeeded
 
         data = {
             "content": message,
             "stickerId": None,
             "type": 0,
-            "timestamp": int(timestamp() * 1000)
+            "timestamp": int(timestamp() * 1000),
+            "eventSource": "UserProfileView"
         }
 
-        if replyTo: data["respondTo"] = replyTo
+        if replyTo:
+            data["respondTo"] = replyTo
+        
+        data = dumps(data)
 
-        if userId:
-            data["eventSource"] = "UserProfileView"
-            data = json.dumps(data)
+        async with self._session.post(f"{API_URL}/g/s/user-profile/{userId}/g-comment", headers=await self._parse_headers(data=data), data=data) as response:
+            if response.status != 200:
+                return CheckException(await response.text())
 
-            async with self.session.post(f"{self.api}/g/s/user-profile/{userId}/g-comment", headers=await self.parse_headers(data=data), data=data) as response:
-                if response.status != 200: return exceptions.CheckException(await response.text())
-                else: return response.status
+            return response.status
 
-        elif blogId:
-            data["eventSource"] = "PostDetailView"
-            data = json.dumps(data)
-
-            async with self.session.post(f"{self.api}/g/s/blog/{blogId}/g-comment", headers=await self.parse_headers(data=data), data=data) as response:
-                if response.status != 200: return exceptions.CheckException(await response.text())
-                else: return response.status
-
-        elif wikiId:
-            data["eventSource"] = "PostDetailView"
-            data = json.dumps(data)
-
-            async with self.session.post(f"{self.api}/g/s/item/{wikiId}/g-comment", headers=await self.parse_headers(data=data), data=data) as response:
-                if response.status != 200: return exceptions.CheckException(await response.text())
-                else: return response.status
-
-        else: raise exceptions.SpecifyType()
-
-    async def delete_comment(self, commentId: str, userId: str = None, blogId: str = None, wikiId: str = None):
+    async def delete_comment(self, commentId: str, userId: str):
         """
         Delete a Comment on a User's Wall, Blog or Wiki.
 
         **Parameters**
             - **commentId** : ID of the Comment.
             - **userId** : ID of the User. (for Walls)
-            - **blogId** : ID of the Blog. (for Blogs)
-            - **wikiId** : ID of the Wiki. (for Wikis)
 
         **Returns**
             - **Success** : 200 (int)
 
             - **Fail** : :meth:`Exceptions <aminofixasync.lib.util.exceptions>`
         """
-        if userId: url = f"{self.api}/g/s/user-profile/{userId}/g-comment/{commentId}"
-        elif blogId: url = f"{self.api}/g/s/blog/{blogId}/g-comment/{commentId}"
-        elif wikiId: url = f"{self.api}/g/s/item/{wikiId}/g-comment/{commentId}"
-        else: raise exceptions.SpecifyType()
+        async with self._session.delete(url=f"{API_URL}/g/s/user-profile/{userId}/g-comment/{commentId}", headers=await self._parse_headers()) as response:
+            if response.status != 200:
+                return CheckException(await response.text())
 
-        async with self.session.delete(url, headers=await self.parse_headers()) as response:
-            if response.status != 200: return exceptions.CheckException(await response.text())
-            else: return response.status
+            return response.status
 
-    async def like_blog(self, blogId: Union[str, list] = None, wikiId: str = None):
-        """
-        Like a Blog, Multiple Blogs or a Wiki.
-
-        **Parameters**
-            - **blogId** : ID of the Blog or List of IDs of the Blogs. (for Blogs)
-            - **wikiId** : ID of the Wiki. (for Wikis)
-
-        **Returns**
-            - **Success** : 200 (int)
-
-            - **Fail** : :meth:`Exceptions <aminofixasync.lib.util.exceptions>`
-        """
-        data = {
-            "value": 4,
-            "timestamp": int(timestamp() * 1000)
-        }
-
-        if blogId:
-            if isinstance(blogId, str):
-                data["eventSource"] = "UserProfileView"
-                data = json.dumps(data)
-
-                async with self.session.post(f"{self.api}/g/s/blog/{blogId}/g-vote?cv=1.2", headers=await self.parse_headers(data=data), data=data) as response:
-                    if response.status != 200: 
-                        if response.status == 403: return exceptions.CheckException(await response.text()) 
-                        else: return exceptions.CheckException(await response.text())
-                    else: return response.status
-
-            elif isinstance(blogId, list):
-                data["targetIdList"] = blogId
-                data = json.dumps(data)
-
-                async with self.session.post(f"{self.api}/g/s/feed/g-vote", headers=await self.parse_headers(data=data), data=data) as response:
-                    if response.status != 200: 
-                        if response.status == 403: return exceptions.CheckException(await response.text()) 
-                        else: return exceptions.CheckException(await response.text())
-                    else: return response.status
-
-            else: raise exceptions.WrongType(type(blogId))
-
-        elif wikiId:
-            data["eventSource"] = "PostDetailView"
-            data = json.dumps(data)
-
-            async with self.session.post(f"{self.api}/g/s/item/{wikiId}/g-vote?cv=1.2", headers=await self.parse_headers(data=data), data=data) as response:
-                if response.status != 200: return exceptions.CheckException(await response.text())
-                else: return response.status
-
-        else: raise exceptions.SpecifyType()
-
-    async def unlike_blog(self, blogId: str = None, wikiId: str = None):
-        """
-        Remove a like from a Blog or Wiki.
-
-        **Parameters**
-            - **blogId** : ID of the Blog. (for Blogs)
-            - **wikiId** : ID of the Wiki. (for Wikis)
-
-        **Returns**
-            - **Success** : 200 (int)
-
-            - **Fail** : :meth:`Exceptions <aminofixasync.lib.util.exceptions>`
-        """
-        if blogId: url = f"{self.api}/g/s/blog/{blogId}/g-vote?eventSource=UserProfileView"
-        elif wikiId: url = f"{self.api}/g/s/item/{wikiId}/g-vote?eventSource=PostDetailView"
-        else: raise exceptions.SpecifyType()
-
-        async with self.session.delete(url, headers=await self.parse_headers()) as response:
-            if response.status != 200: return exceptions.CheckException(await response.text())
-            else: return response.status
-
-    async def like_comment(self, commentId: str, userId: str = None, blogId: str = None, wikiId: str = None):
+    async def like_comment(self, commentId: str, userId: str):
         """
         Like a Comment on a User's Wall, Blog or Wiki.
 
         **Parameters**
             - **commentId** : ID of the Comment.
             - **userId** : ID of the User. (for Walls)
-            - **blogId** : ID of the Blog. (for Blogs)
-            - **wikiId** : ID of the Wiki. (for Wikis)
 
         **Returns**
             - **Success** : 200 (int)
 
             - **Fail** : :meth:`Exceptions <aminofixasync.lib.util.exceptions>`
         """
-        data = {
+        data = dumps({
             "value": 4,
-            "timestamp": int(timestamp() * 1000)
-        }
+            "timestamp": int(timestamp() * 1000),
+            "eventSource": "UserProfileView"
+        })
 
-        if userId:
-            data["eventSource"] = "UserProfileView"
-            data = json.dumps(data)
+        async with self._session.post(f"{API_URL}/g/s/user-profile/{userId}/comment/{commentId}/g-vote?cv=1.2&value=1", headers=await self._parse_headers(data=data), data=data) as response:
+            if response.status != 200:
+                return CheckException(await response.text())
 
-            async with self.session.post(f"{self.api}/g/s/user-profile/{userId}/comment/{commentId}/g-vote?cv=1.2&value=1", headers=await self.parse_headers(data=data), data=data) as response:
-                if response.status != 200: return exceptions.CheckException(await response.text())
-                else: return response.status
+            return response.status
 
-        elif blogId:
-            data["eventSource"] = "PostDetailView"
-            data = json.dumps(data)
-
-            async with self.session.post(f"{self.api}/g/s/blog/{blogId}/comment/{commentId}/g-vote?cv=1.2&value=1", headers=await self.parse_headers(data=data), data=data) as response:
-                if response.status != 200: return exceptions.CheckException(await response.text())
-                else: return response.status
-
-        elif wikiId:
-            data["eventSource"] = "PostDetailView"
-            data = json.dumps(data)
-
-            async with self.session.post(f"{self.api}/g/s/item/{wikiId}/comment/{commentId}/g-vote?cv=1.2&value=1", headers=await self.parse_headers(data=data), data=data) as response:
-                if response.status != 200: return exceptions.CheckException(await response.text())
-                else: return response.status
-
-        else: raise exceptions.SpecifyType()
-
-    async def unlike_comment(self, commentId: str, userId: str = None, blogId: str = None, wikiId: str = None):
+    async def unlike_comment(self, commentId: str, userId: str):
         """
         Remove a like from a Comment on a User's Wall, Blog or Wiki.
 
         **Parameters**
             - **commentId** : ID of the Comment.
             - **userId** : ID of the User. (for Walls)
-            - **blogId** : ID of the Blog. (for Blogs)
-            - **wikiId** : ID of the Wiki. (for Wikis)
 
         **Returns**
             - **Success** : 200 (int)
 
             - **Fail** : :meth:`Exceptions <aminofixasync.lib.util.exceptions>`
         """
-        if userId: url = f"{self.api}/g/s/user-profile/{userId}/comment/{commentId}/g-vote?eventSource=UserProfileView"
-        elif blogId: url = f"{self.api}/g/s/blog/{blogId}/comment/{commentId}/g-vote?eventSource=PostDetailView"
-        elif wikiId: url = f"{self.api}/g/s/item/{wikiId}/comment/{commentId}/g-vote?eventSource=PostDetailView"
-        else: raise exceptions.SpecifyType()
+        async with self._session.delete(url=f"{API_URL}/g/s/user-profile/{userId}/comment/{commentId}/g-vote?eventSource=UserProfileView", headers=await self._parse_headers()) as response:
+            if response.status != 200:
+                return CheckException(await response.text())
 
-        async with self.session.delete(url, headers=await self.parse_headers()) as response:
-            if response.status != 200: return exceptions.CheckException(await response.text())
-            else: return response.status
+            return response.status
 
     async def get_membership_info(self):
         """
@@ -2106,13 +1432,15 @@ class Client(Callbacks, SocketHandler):
             - No parameters required.
 
         **Returns**
-            - **Success** : :meth:`Membership Object <aminofixasync.lib.util.objects.Membership>`
+            - **Success** : :meth:`Membership Object <aminofixasync.lib.util.Membership>`
 
             - **Fail** : :meth:`Exceptions <aminofixasync.lib.util.exceptions>`
         """
-        async with self.session.get(f"{self.api}/g/s/membership?force=true", headers=await self.parse_headers()) as response:
-            if response.status != 200: return exceptions.CheckException(await response.text())
-            else: return objects.Membership(json.loads(await response.text())).Membership
+        async with self._session.get(f"{API_URL}/g/s/membership?force=true", headers=await self._parse_headers()) as response:
+            if response.status != 200:
+                return CheckException(await response.text())
+
+            return Membership(loads(await response.text())).Membership
 
     async def get_ta_announcements(self, language: str = "en", start: int = 0, size: int = 25):
         """
@@ -2125,15 +1453,18 @@ class Client(Callbacks, SocketHandler):
             - *size* : Size of the list.
 
         **Returns**
-            - **Success** : :meth:`Blogs List <aminofixasync.lib.util.objects.BlogList>`
+            - **Success** : :meth:`Blogs List <aminofixasync.lib.util.BlogList>`
 
             - **Fail** : :meth:`Exceptions <aminofixasync.lib.util.exceptions>`
         """
-        if language not in self.get_supported_languages(): raise exceptions.UnsupportedLanguage(language)
+        if language not in SUPPORTED_LANGAUGES:
+            raise UnsupportedLanguage(language)
 
-        async with self.session.get(f"{self.api}/g/s/announcement?language={language}&start={start}&size={size}", headers=await self.parse_headers()) as response:
-            if response.status != 200: return exceptions.CheckException(await response.text())
-            else: return objects.BlogList(json.loads(await response.text())["blogList"]).BlogList
+        async with self._session.get(f"{API_URL}/g/s/announcement?language={language}&start={start}&size={size}", headers=await self._parse_headers()) as response:
+            if response.status != 200:
+                return CheckException(await response.text())
+
+            return BlogList(loads(await response.text())["blogList"]).BlogList
 
     async def get_wallet_info(self):
         """
@@ -2143,13 +1474,15 @@ class Client(Callbacks, SocketHandler):
             - No parameters required.
 
         **Returns**
-            - **Success** : :meth:`Wallet Object <aminofixasync.lib.util.objects.WalletInfo>`
+            - **Success** : :meth:`Wallet Object <aminofixasync.lib.util.WalletInfo>`
 
             - **Fail** : :meth:`Exceptions <aminofixasync.lib.util.exceptions>`
         """
-        async with self.session.get(f"{self.api}/g/s/wallet", headers=await self.parse_headers()) as response:
-            if response.status != 200: return exceptions.CheckException(await response.text())
-            else: return objects.WalletInfo(json.loads(await response.text())["wallet"]).WalletInfo
+        async with self._session.get(f"{API_URL}/g/s/wallet", headers=await self._parse_headers()) as response:
+            if response.status != 200:
+                return CheckException(await response.text())
+
+            return WalletInfo(loads(await response.text())["wallet"]).WalletInfo
 
     async def get_wallet_history(self, start: int = 0, size: int = 25):
         """
@@ -2160,13 +1493,15 @@ class Client(Callbacks, SocketHandler):
             - *size* : Size of the list.
 
         **Returns**
-            - **Success** : :meth:`Wallet Object <aminofixasync.lib.util.objects.WalletInfo>`
+            - **Success** : :meth:`Wallet Object <aminofixasync.lib.util.WalletInfo>`
 
             - **Fail** : :meth:`Exceptions <aminofixasync.lib.util.exceptions>`
         """
-        async with self.session.get(f"{self.api}/g/s/wallet/coin/history?start={start}&size={size}", headers=await self.parse_headers()) as response:
-            if response.status != 200: return exceptions.CheckException(await response.text())
-            else: return objects.WalletHistory(json.loads(await response.text())["coinHistoryList"]).WalletHistory
+        async with self._session.get(f"{API_URL}/g/s/wallet/coin/history?start={start}&size={size}", headers=await self._parse_headers()) as response:
+            if response.status != 200:
+                return CheckException(await response.text())
+
+            return WalletHistory(loads(await response.text())["coinHistoryList"]).WalletHistory
 
     async def get_from_deviceid(self, deviceId: str):
         """
@@ -2176,13 +1511,15 @@ class Client(Callbacks, SocketHandler):
             - **deviceID** : ID of the Device.
 
         **Returns**
-            - **Success** : :meth:`User ID <aminofixasync.lib.util.objects.UserProfile.userId>`
+            - **Success** : :meth:`User ID <aminofixasync.lib.util.UserProfile.userId>`
 
             - **Fail** : :meth:`Exceptions <aminofixasync.lib.util.exceptions>`
         """
-        async with self.session.get(f"{self.api}/g/s/auid?deviceId={deviceId}", headers=await self.parse_headers()) as response:
-            if response.status != 200: return exceptions.CheckException(await response.text())
-            else: return json.loads(await response.text())["auid"]
+        async with self._session.get(f"{API_URL}/g/s/auid?deviceId={deviceId}", headers=await self._parse_headers()) as response:
+            if response.status != 200:
+                return CheckException(await response.text())
+
+            return loads(await response.text())["auid"]
 
     async def get_from_code(self, code: str):
         """
@@ -2192,41 +1529,15 @@ class Client(Callbacks, SocketHandler):
             - **code** : Code from the Amino URL.
 
         **Returns**
-            - **Success** : :meth:`From Code Object <aminofixasync.lib.util.objects.FromCode>`
+            - **Success** : :meth:`From Code Object <aminofixasync.lib.util.FromCode>`
 
             - **Fail** : :meth:`Exceptions <aminofixasync.lib.util.exceptions>`
         """
-        async with self.session.get(f"{self.api}/g/s/link-resolution?q={code}", headers=await self.parse_headers()) as response:
-            if response.status != 200: return exceptions.CheckException(await response.text())
-            else: return objects.FromCode(json.loads(await response.text())["linkInfoV2"]).FromCode
+        async with self._session.get(f"{API_URL}/g/s/link-resolution?q={code}", headers=await self._parse_headers()) as response:
+            if response.status != 200:
+                return CheckException(await response.text())
 
-    async def get_from_id(self, objectId: str, objectType: int, comId: str = None):
-        """
-        Get the Object Information from the Object ID and Type.
-
-        **Parameters**
-            - **objectID** : ID of the Object. User ID, Blog ID, etc.
-            - **objectType** : Type of the Object.
-            - *comId* : ID of the Community. Use if the Object is in a Community.
-
-        **Returns**
-            - **Success** : :meth:`From Code Object <aminofixasync.lib.util.objects.FromCode>`
-
-            - **Fail** : :meth:`Exceptions <aminofixasnyc.lib.util.exceptions>`
-        """
-        data = json.dumps({
-            "objectId": objectId,
-            "targetCode": 1,
-            "objectType": objectType,
-            "timestamp": int(timestamp() * 1000)
-        })
-
-        if comId: url = f"{self.api}/g/s-x{comId}/link-resolution"
-        else: url = f"{self.api}/g/s/link-resolution"
-
-        async with self.session.post(url, headers=await self.parse_headers(data=data), data=data) as response:
-            if response.status != 200: return exceptions.CheckException(await response.text())
-            else: return objects.FromCode(json.loads(await response.text())["linkInfoV2"]).FromCode
+            return FromCode(loads(await response.text())["linkInfoV2"]).FromCode
 
     async def get_supported_languages(self):
         """
@@ -2240,9 +1551,11 @@ class Client(Callbacks, SocketHandler):
 
             - **Fail** : :meth:`Exceptions <aminofixasync.lib.util.exceptions>`
         """
-        async with self.session.get(f"{self.api}/g/s/community-collection/supported-languages?start=0&size=100", headers=await self.parse_headers()) as response:
-            if response.status != 200: return exceptions.CheckException(await response.text())
-            else: return json.loads(await response.text())["supportedLanguages"]
+        async with self._session.get(f"{API_URL}/g/s/community-collection/supported-languages?start=0&size=100", headers=await self._parse_headers()) as response:
+            if response.status != 200:
+                return CheckException(await response.text())
+
+            return loads(await response.text())["supportedLanguages"]
 
     async def claim_new_user_coupon(self):
         """
@@ -2256,9 +1569,11 @@ class Client(Callbacks, SocketHandler):
 
             - **Fail** : :meth:`Exceptions <aminofixasync.lib.util.exceptions>`
         """
-        async with self.session.post(f"{self.api}/g/s/coupon/new-user-coupon/claim", headers=await self.parse_headers()) as response:
-            if response.status != 200: return exceptions.CheckException(await response.text())
-            else: return response.status
+        async with self._session.post(f"{API_URL}/g/s/coupon/new-user-coupon/claim", headers=await self._parse_headers()) as response:
+            if response.status != 200:
+                return CheckException(await response.text())
+
+            return response.status
 
     async def get_subscriptions(self, start: int = 0, size: int = 25):
         """
@@ -2273,9 +1588,11 @@ class Client(Callbacks, SocketHandler):
 
             - **Fail** : :meth:`Exceptions <aminofixasync.lib.util.exceptions>`
         """
-        async with self.session.get(f"{self.api}/g/s/store/subscription?objectType=122&start={start}&size={size}", headers=await self.parse_headers()) as response:
-            if response.status != 200: return exceptions.CheckException(await response.text())
-            else: return json.loads(await response.text())["storeSubscriptionItemList"]
+        async with self._session.get(f"{API_URL}/g/s/store/subscription?objectType=122&start={start}&size={size}", headers=await self._parse_headers()) as response:
+            if response.status != 200:
+                return CheckException(await response.text())
+
+            return loads(await response.text())["storeSubscriptionItemList"]
 
     async def get_all_users(self, start: int = 0, size: int = 25):
         """
@@ -2286,49 +1603,23 @@ class Client(Callbacks, SocketHandler):
             - *size* : Size of the list.
 
         **Returns**
-            - **Success** : :meth:`User Profile Count List Object <aminofixasync.lib.util.objects.UserProfileCountList>`
+            - **Success** : :meth:`User Profile Count List Object <aminofixasync.lib.util.UserProfileCountList>`
 
             - **Fail** : :meth:`Exceptions <aminofixasync.lib.util.exceptions>`
         """
-        async with self.session.get(f"{self.api}/g/s/user-profile?type=recent&start={start}&size={size}", headers=await self.parse_headers()) as response:
-            if response.status != 200: return exceptions.CheckException(await response.text())
-            else: return objects.UserProfileCountList(json.loads(await response.text())).UserProfileCountList
+        async with self._session.get(f"{API_URL}/g/s/user-profile?type=recent&start={start}&size={size}", headers=await self._parse_headers()) as response:
+            if response.status != 200:
+                return CheckException(await response.text())
 
-    async def accept_host(self, chatId: str, requestId: str):
-        async with self.session.post(f"{self.api}/g/s/chat/thread/{chatId}/transfer-organizer/{requestId}/accept", headers=await self.parse_headers()) as response:
-            if response.status != 200: return exceptions.CheckException(await response.text())
-            else: return response.status
-
-    async def accept_organizer(self, chatId: str, requestId: str):
-        await self.accept_host(chatId, requestId)
+            return UserProfileCountList(loads(await response.text())).UserProfileCountList
 
     # Contributed by 'https://github.com/LynxN1'
     async def link_identify(self, code: str):
-        async with self.session.get(f"{self.api}/g/s/community/link-identify?q=http%3A%2F%2Faminoapps.com%2Finvite%2F{code}", headers=await self.parse_headers()) as response:
-            if response.status != 200: return exceptions.CheckException(await response.text())
-            else: return json.loads(await response.text())
+        async with self._session.get(f"{API_URL}/g/s/community/link-identify?q=http%3A%2F%2Faminoapps.com%2Finvite%2F{code}", headers=await self._parse_headers()) as response:
+            if response.status != 200:
+                return CheckException(await response.text())
 
-    async def invite_to_vc(self, chatId: str, userId: str):
-        """
-        Invite a User to a Voice Chat
-
-        **Parameters**
-            - **chatId** - ID of the Chat
-            - **userId** - ID of the User
-
-        **Returns**
-            - **Success** : 200 (int)
-
-            - **Fail** : :meth:`Exceptions <aminofixasync.lib.util.exceptions>`
-        """
-
-        data = json.dumps({
-            "uid": userId
-        })
-
-        async with self.session.post(f"{self.api}/g/s/chat/thread/{chatId}/vvchat-presenter/invite", headers=await self.parse_headers(data=data), data=data) as response:
-            if response.status != 200: return exceptions.CheckException(await response.text())
-            else: return response.status
+            return loads(await response.text())
 
     async def wallet_config(self, level: int):
         """
@@ -2343,77 +1634,13 @@ class Client(Callbacks, SocketHandler):
 
             - **Fail** : :meth:`Exceptions <aminofixasync.lib.util.exceptions>`
         """
-        data = json.dumps({
+        data = dumps({
             "adsLevel": level,
             "timestamp": int(timestamp() * 1000)
         })
 
-        async with self.session.post(f"{self.api}/g/s/wallet/ads/config", headers=await self.parse_headers(data=data), data=data) as response:
-            if response.status != 200: return exceptions.CheckException(await response.text())
-            else: return response.status
+        async with self._session.post(f"{API_URL}/g/s/wallet/ads/config", headers=await self._parse_headers(data=data), data=data) as response:
+            if response.status != 200:
+                return CheckException(await response.text())
 
-    async def get_avatar_frames(self, start: int = 0, size: int = 25):
-        async with self.session.get(f"{self.api}/g/s/avatar-frame?start={start}&size={size}", headers=await self.parse_headers()) as response:
-            if response.status != 200: return exceptions.CheckException(await response.text())
-            else: return objects.AvatarFrameList(json.loads(await response.text())["avatarFrameList"]).AvatarFrameList
-    
-    async def subscribe_amino_plus(self, transactionId="", sku="d940cf4a-6cf2-4737-9f3d-655234a92ea5"):
-        """
-        Subscibes to amino+
-
-        **Parameters**
-            - **transactionId** - The transaction Id as a uuid4
-
-        **Returns**
-            - **Success** : 200 (int)
-
-            - **Fail** : :meth:`Exceptions <aminofixasync.lib.util.exceptions>`
-        """
-        data = json.dumps({
-            {
-                "sku": sku,
-                "packageName": "com.narvii.amino.master",
-                "paymentType": 1,
-                "paymentContext": {
-                    "transactionId": (transactionId or str(uuid4())),
-                    "isAutoRenew": True
-                },
-                "timestamp": timestamp()
-            }
-        })
-        async with self.session.post(f"{self.api}/g/s/membership/product/subscribe", headers=await self.parse_headers(data=data), data=data) as response:
-            if response.status != 200: return exceptions.CheckException(await response.text())
-            else: return response.status
-
-    async def purchase(self, objectId: str, isAutoRenew: bool = False):
-        data = json.dumps({
-            "objectId": objectId,
-            "objectType": 114,
-            "v": 1,
-            "paymentContext":
-            {
-                "discountStatus": 0,
-                "isAutoRenew": isAutoRenew
-            },
-            "timestamp": timestamp()
-        })
-        async with self.session.post(f"{self.api}/g/s/store/purchase", headers=await self.parse_headers(data=data), data=data) as response:
-            if response.status != 200: return exceptions.CheckException(await response.text())
-            else: return response.status
-
-    async def get_public_communities(self, language: str = "en", size: int = 25):
-        """
-        Get public communites
-
-        **Parameters**
-            - **language** - Set up language
-
-        **Returns**
-            - **Success** : :meth:`Community List <amino.lib.util.objects.CommunityList>`
-
-            - **Fail** : :meth:`Exceptions <aminofix.lib.util.exceptions>`
-        """
-
-        async with self.session.get(f"{self.api}/g/s/topic/0/feed/community?language={language}&type=web-explore&categoryKey=recommendation&size={size}&pagingType=t", headers=await self.parse_headers()) as response:
-            if response.status != 200: return exceptions.CheckException(await response.text())
-            else: return objects.CommunityList(json.loads(await response.text())["communityList"]).CommunityList
+            return response.status

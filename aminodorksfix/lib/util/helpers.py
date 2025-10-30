@@ -1,70 +1,104 @@
-import json
-import os
+from base64 import (
+    b64decode,
+    b64encode
+)
+from json import (
+    dumps,
+    loads
+)
+from typing import (
+    Dict
+)
 
+from ...constants import (
+    PREFIX,
+    SIGNATURE_KEY,
+    DEVICE_KEY,
+    GENERATOR_HEADERS,
+    GENERATOR_URL
+)
+
+from os import urandom
 from functools import reduce
-from base64 import b64decode, b64encode
-from typing import Union
 from hashlib import sha1
 from hmac import new
 from aiohttp import ClientSession
 from requests import Session
-PREFIX = bytes.fromhex("52")
-SIG_KEY = bytes.fromhex("EAB4F1B9E3340CD1631EDE3B587CC3EBEDF1AFA9")
-DEVICE_KEY = bytes.fromhex("AE49550458D8E7C51D566916B04888BFB8B3CA7D")
-
-gen_headers = {
-    "Content-Type": "application/json; charset=utf8",
-    "CONNECTION": "Keep-Alive",
-    "Authorization": None
-}
-gen_api_url = "https://aminodorks.agency/api/v1"
 
 
 def gen_deviceId(data: bytes = None) -> str:
-    if isinstance(data, str): data = bytes(data, 'utf-8')
-    identifier = PREFIX + (data or os.urandom(20))
+    if isinstance(data, str):
+        data = bytes(data, 'utf-8')
+    identifier = PREFIX + (data or urandom(20))
     mac = new(DEVICE_KEY, identifier, sha1)
     return f"{identifier.hex()}{mac.hexdigest()}".upper()
 
 
-def signature(data: Union[str, bytes]) -> str:
-    data = data if isinstance(data, bytes) else data.encode("utf-8")
-    return b64encode(PREFIX + new(SIG_KEY, data, sha1).digest()).decode("utf-8")
+def signature(data: str | bytes) -> str:
+    data = data if isinstance(data, bytes) \
+           else data.encode('utf-8')  # type: ignore
+    return b64encode(
+        PREFIX + new(SIGNATURE_KEY, data, sha1).digest()
+    ).decode("utf-8")
 
 
-def get_credentials(session: Session, userId: str):
-    response = session.get(f"{gen_api_url}/signature/credentials/{userId}", headers=gen_headers)
+def get_credentials_sync(
+        session: Session,
+        userId: str
+) -> Dict[str, str | int]:
+    response = session.get(
+        url=f"{GENERATOR_URL}/signature/credentials/{userId}",
+        headers=GENERATOR_HEADERS
+    )
     if response.status_code != 200:
         raise Exception(response.text)
+
     return response.json()["credentials"]
 
 
-async def get_certs_a(session: ClientSession, userId: str):
-    async with session.get(f"{gen_api_url}/signature/credentials/{userId}", headers=gen_headers) as response:
+async def get_credentials(
+        session: ClientSession,
+        userId: str
+) -> Dict[str, str | int]:
+    async with session.get(
+        url=f"{GENERATOR_URL}/signature/credentials/{userId}",
+        headers=GENERATOR_HEADERS
+    ) as response:
         if response.status != 200:
             raise Exception(await response.text())
+
         return (await response.json())["credentials"]
 
 
-def new_sig(session: Session, data: str, userId: str):
-    data = json.dumps({
+def ecdsa_sync(session: Session, data: str, userId: str) -> str:
+    data = dumps({
         "payload": data,
         "userId": userId
     })
-    response = session.post(f"{gen_api_url}/signature/ecdsa", headers=gen_headers,data=data)
+    response = session.post(
+        url=f"{GENERATOR_URL}/signature/ecdsa",
+        headers=GENERATOR_HEADERS,
+        data=data
+    )
     if response.status_code != 200:
         raise Exception(response.text)
+
     return response.json()["ECDSA"]
 
 
-async def new_sig_a(session: ClientSession, data: str, userId: str):
-    data = json.dumps({
+async def ecdsa(session: ClientSession, data: str, userId: str) -> str:
+    data = dumps({
         "payload": data,
         "userId": userId
     })
-    async with session.post(f"{gen_api_url}/signature/ecdsa", headers=gen_headers,data=data) as response:
+    async with session.post(
+        url=f"{GENERATOR_URL}/signature/ecdsa",
+        headers=GENERATOR_HEADERS,
+        data=data
+    ) as response:
         if response.status != 200:
             raise Exception(await response.text())
+
         return (await response.json())["ECDSA"]
 
 
@@ -73,7 +107,11 @@ def update_deviceId(device: str) -> str:
 
 
 def decode_sid(sid: str) -> dict:
-    return json.loads(b64decode(reduce(lambda a, e: a.replace(*e), ("-+", "_/"), sid + "=" * (-len(sid) % 4)).encode())[1:-20].decode())
+    return loads(b64decode(reduce(
+        lambda a, e: a.replace(
+            *e  # type: ignore
+        ), ("-+", "_/"), sid + "=" * (-len(sid) % 4)
+    ).encode())[1:-20].decode())
 
 
 def sid_to_uid(SID: str) -> str: return decode_sid(SID)["2"]

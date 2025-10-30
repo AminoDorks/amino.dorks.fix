@@ -10,6 +10,7 @@ class UnsupportedService(Exception):
     def __init__(*args, **kwargs):
         Exception.__init__(*args, **kwargs)
 
+
 class FileTooLarge(Exception):
     """
     - **API Code** : 102
@@ -18,6 +19,7 @@ class FileTooLarge(Exception):
     """
     def __init__(*args, **kwargs):
         Exception.__init__(*args, **kwargs)
+
 
 class InvalidRequest(Exception):
     """
@@ -28,6 +30,7 @@ class InvalidRequest(Exception):
     def __init__(*args, **kwargs):
         Exception.__init__(*args, **kwargs)
 
+
 class InvalidSession(Exception):
     """
     - **API Code** : 105
@@ -36,6 +39,7 @@ class InvalidSession(Exception):
     """
     def __init__(*args, **kwargs):
         Exception.__init__(*args, **kwargs)
+
 
 class AccessDenied(Exception):
     """
@@ -46,6 +50,7 @@ class AccessDenied(Exception):
     def __init__(*args, **kwargs):
         Exception.__init__(*args, **kwargs)
 
+
 class UnexistentData(Exception):
     """
     - **API Code** : 107
@@ -54,6 +59,7 @@ class UnexistentData(Exception):
     """
     def __init__(*args, **kwargs):
         Exception.__init__(*args, **kwargs)
+
 
 class ActionNotAllowed(Exception):
     """
@@ -64,6 +70,7 @@ class ActionNotAllowed(Exception):
     def __init__(*args, **kwargs):
         Exception.__init__(*args, **kwargs)
 
+
 class ServiceUnderMaintenance(Exception):
     """
     - **API Code** : 111
@@ -72,6 +79,7 @@ class ServiceUnderMaintenance(Exception):
     """
     def __init__(*args, **kwargs):
         Exception.__init__(*args, **kwargs)
+
 
 class MessageNeeded(Exception):
     """
@@ -82,6 +90,7 @@ class MessageNeeded(Exception):
     def __init__(*args, **kwargs):
         Exception.__init__(*args, **kwargs)
 
+
 class InvalidAccountOrPassword(Exception):
     """
     - **API Code** : 200
@@ -90,6 +99,7 @@ class InvalidAccountOrPassword(Exception):
     """
     def __init__(*args, **kwargs):
         Exception.__init__(*args, **kwargs)
+
 
 class AccountDisabled(Exception):
     """
@@ -100,6 +110,7 @@ class AccountDisabled(Exception):
     def __init__(*args, **kwargs):
         Exception.__init__(*args, **kwargs)
 
+
 class InvalidEmail(Exception):
     """
     - **API Code** : 213
@@ -108,6 +119,7 @@ class InvalidEmail(Exception):
     """
     def __init__(*args, **kwargs):
         Exception.__init__(*args, **kwargs)
+
 
 class InvalidPassword(Exception):
     """
@@ -118,6 +130,7 @@ class InvalidPassword(Exception):
     def __init__(*args, **kwargs):
         Exception.__init__(*args, **kwargs)
 
+
 class EmailAlreadyTaken(Exception):
     """
     - **API Code** : 215
@@ -126,6 +139,7 @@ class EmailAlreadyTaken(Exception):
     """
     def __init__(*args, **kwargs):
         Exception.__init__(*args, **kwargs)
+
 
 class UnsupportedEmail(Exception):
     """
@@ -136,6 +150,7 @@ class UnsupportedEmail(Exception):
     def __init__(*args, **kwargs):
         Exception.__init__(*args, **kwargs)
 
+
 class AccountDoesntExist(Exception):
     """
     - **API Code** : 216
@@ -144,6 +159,7 @@ class AccountDoesntExist(Exception):
     """
     def __init__(*args, **kwargs):
         Exception.__init__(*args, **kwargs)
+
 
 class InvalidDevice(Exception):
     """
@@ -154,6 +170,7 @@ class InvalidDevice(Exception):
     def __init__(*args, **kwargs):
         Exception.__init__(*args, **kwargs)
 
+
 class AccountLimitReached(Exception):
     """
     - **API Code** : 219
@@ -162,6 +179,7 @@ class AccountLimitReached(Exception):
     """
     def __init__(*args, **kwargs):
         Exception.__init__(*args, **kwargs)
+
 
 class TooManyRequests(Exception):
     """
@@ -172,6 +190,7 @@ class TooManyRequests(Exception):
     def __init__(*args, **kwargs):
         Exception.__init__(*args, **kwargs)
 
+
 class CantFollowYourself(Exception):
     """
     - **API Code** : 221
@@ -180,6 +199,7 @@ class CantFollowYourself(Exception):
     """
     def __init__(*args, **kwargs):
         Exception.__init__(*args, **kwargs)
+
 
 class UserUnavailable(Exception):
     """
@@ -190,6 +210,7 @@ class UserUnavailable(Exception):
     def __init__(*args, **kwargs):
         Exception.__init__(*args, **kwargs)
 
+
 class YouAreBanned(Exception):
     """
     - **API Code** : 229
@@ -198,6 +219,7 @@ class YouAreBanned(Exception):
     """
     def __init__(*args, **kwargs):
         Exception.__init__(*args, **kwargs)
+
 
 class UserNotMemberOfCommunity(Exception):
     """
@@ -208,6 +230,7 @@ class UserNotMemberOfCommunity(Exception):
     def __init__(*args, **kwargs):
         Exception.__init__(*args, **kwargs)
 
+
 class RequestRejected(Exception):
     """
     - **API Code** : 235
@@ -216,6 +239,7 @@ class RequestRejected(Exception):
     """
     def __init__(*args, **kwargs):
         Exception.__init__(*args, **kwargs)
+
 
 class ActivateAccount(Exception):
     """
@@ -226,6 +250,7 @@ class ActivateAccount(Exception):
     def __init__(*args, **kwargs):
         Exception.__init__(*args, **kwargs)
 
+
 class CantLeaveCommunity(Exception):
     """
     - **API Code** : 239
@@ -234,6 +259,7 @@ class CantLeaveCommunity(Exception):
     """
     def __init__(*args, **kwargs):
         Exception.__init__(*args, **kwargs)
+
 
 class ReachedTitleLength(Exception):
     """
@@ -244,6 +270,7 @@ class ReachedTitleLength(Exception):
     def __init__(*args, **kwargs):
         Exception.__init__(*args, **kwargs)
 
+
 class AccountDeleted(Exception):
     """
     - **API Code** : 246
@@ -252,6 +279,7 @@ class AccountDeleted(Exception):
     """
     def __init__(*args, **kwargs):
         Exception.__init__(*args, **kwargs)
+
 
 class API_ERR_EMAIL_NO_PASSWORD(Exception):
     """
@@ -262,6 +290,7 @@ class API_ERR_EMAIL_NO_PASSWORD(Exception):
     def __init__(*args, **kwargs):
         Exception.__init__(*args, **kwargs)
 
+
 class API_ERR_COMMUNITY_USER_CREATED_COMMUNITIES_VERIFY(Exception):
     """
     - **API Code** : 257
@@ -270,6 +299,7 @@ class API_ERR_COMMUNITY_USER_CREATED_COMMUNITIES_VERIFY(Exception):
     """
     def __init__(*args, **kwargs):
         Exception.__init__(*args, **kwargs)
+
 
 class ReachedMaxTitles(Exception):
     """
@@ -280,6 +310,7 @@ class ReachedMaxTitles(Exception):
     def __init__(*args, **kwargs):
         Exception.__init__(*args, **kwargs)
 
+
 class VerificationRequired(Exception):
     """
     - **API Code** : 270
@@ -288,6 +319,7 @@ class VerificationRequired(Exception):
     """
     def __init__(*args, **kwargs):
         Exception.__init__(*args, **kwargs)
+
 
 class API_ERR_INVALID_AUTH_NEW_DEVICE_LINK(Exception):
     """
@@ -298,6 +330,7 @@ class API_ERR_INVALID_AUTH_NEW_DEVICE_LINK(Exception):
     def __init__(*args, **kwargs):
         Exception.__init__(*args, **kwargs)
 
+
 class CommandCooldown(Exception):
     """
     - **API Code** : 291
@@ -306,6 +339,7 @@ class CommandCooldown(Exception):
     """
     def __init__(*args, **kwargs):
         Exception.__init__(*args, **kwargs)
+
 
 class UserBannedByTeamAmino(Exception):
     """
@@ -316,6 +350,7 @@ class UserBannedByTeamAmino(Exception):
     def __init__(*args, **kwargs):
         Exception.__init__(*args, **kwargs)
 
+
 class BadImage(Exception):
     """
     - **API Code** : 300
@@ -324,6 +359,7 @@ class BadImage(Exception):
     """
     def __init__(*args, **kwargs):
         Exception.__init__(*args, **kwargs)
+
 
 class InvalidThemepack(Exception):
     """
@@ -334,6 +370,7 @@ class InvalidThemepack(Exception):
     def __init__(*args, **kwargs):
         Exception.__init__(*args, **kwargs)
 
+
 class InvalidVoiceNote(Exception):
     """
     - **API Code** : 314
@@ -342,6 +379,7 @@ class InvalidVoiceNote(Exception):
     """
     def __init__(*args, **kwargs):
         Exception.__init__(*args, **kwargs)
+
 
 class RequestedNoLongerExists(Exception):
     """
@@ -352,6 +390,7 @@ class RequestedNoLongerExists(Exception):
     def __init__(*args, **kwargs):
         Exception.__init__(*args, **kwargs)
 
+
 class PageRepostedTooRecently(Exception):
     """
     - **API Code** : 503
@@ -360,6 +399,7 @@ class PageRepostedTooRecently(Exception):
     """
     def __init__(*args, **kwargs):
         Exception.__init__(*args, **kwargs)
+
 
 class InsufficientLevel(Exception):
     """
@@ -370,6 +410,7 @@ class InsufficientLevel(Exception):
     def __init__(*args, **kwargs):
         Exception.__init__(*args, **kwargs)
 
+
 class WallCommentingDisabled(Exception):
     """
     - **API Code** : 702
@@ -378,6 +419,7 @@ class WallCommentingDisabled(Exception):
     """
     def __init__(*args, **kwargs):
         Exception.__init__(*args, **kwargs)
+
 
 class CommunityNoLongerExists(Exception):
     """
@@ -388,6 +430,7 @@ class CommunityNoLongerExists(Exception):
     def __init__(*args, **kwargs):
         Exception.__init__(*args, **kwargs)
 
+
 class InvalidCodeOrLink(Exception):
     """
     - **API Code** : 802
@@ -396,6 +439,7 @@ class InvalidCodeOrLink(Exception):
     """
     def __init__(*args, **kwargs):
         Exception.__init__(*args, **kwargs)
+
 
 class CommunityNameAlreadyTaken(Exception):
     """
@@ -406,6 +450,7 @@ class CommunityNameAlreadyTaken(Exception):
     def __init__(*args, **kwargs):
         Exception.__init__(*args, **kwargs)
 
+
 class CommunityCreateLimitReached(Exception):
     """
     - **API Code** : 806
@@ -414,6 +459,7 @@ class CommunityCreateLimitReached(Exception):
     """
     def __init__(*args, **kwargs):
         Exception.__init__(*args, **kwargs)
+
 
 class CommunityDisabled(Exception):
     """
@@ -424,6 +470,7 @@ class CommunityDisabled(Exception):
     def __init__(*args, **kwargs):
         Exception.__init__(*args, **kwargs)
 
+
 class CommunityDeleted(Exception):
     """
     - **API Code** : 833
@@ -432,6 +479,7 @@ class CommunityDeleted(Exception):
     """
     def __init__(*args, **kwargs):
         Exception.__init__(*args, **kwargs)
+
 
 class DuplicatePollOption(Exception):
     """
@@ -442,6 +490,7 @@ class DuplicatePollOption(Exception):
     def __init__(*args, **kwargs):
         Exception.__init__(*args, **kwargs)
 
+
 class ReachedMaxPollOptions(Exception):
     """
     - **API Code** : 1507
@@ -450,6 +499,7 @@ class ReachedMaxPollOptions(Exception):
     """
     def __init__(*args, **kwargs):
         Exception.__init__(*args, **kwargs)
+
 
 class TooManyChats(Exception):
     """
@@ -461,6 +511,7 @@ class TooManyChats(Exception):
     def __init__(*args, **kwargs):
         Exception.__init__(*args, **kwargs)
 
+
 class ChatFull(Exception):
     """
     - **API Code** : 1605
@@ -469,6 +520,7 @@ class ChatFull(Exception):
     """
     def __init__(*args, **kwargs):
         Exception.__init__(*args, **kwargs)
+
 
 class TooManyInviteUsers(Exception):
     """
@@ -479,6 +531,7 @@ class TooManyInviteUsers(Exception):
     def __init__(*args, **kwargs):
         Exception.__init__(*args, **kwargs)
 
+
 class ChatInvitesDisabled(Exception):
     """
     - **API Code** : 1611
@@ -487,6 +540,7 @@ class ChatInvitesDisabled(Exception):
     """
     def __init__(*args, **kwargs):
         Exception.__init__(*args, **kwargs)
+
 
 class RemovedFromChat(Exception):
     """
@@ -497,6 +551,7 @@ class RemovedFromChat(Exception):
     def __init__(*args, **kwargs):
         Exception.__init__(*args, **kwargs)
 
+
 class UserNotJoined(Exception):
     """
     - **API Code** : 1613
@@ -505,6 +560,7 @@ class UserNotJoined(Exception):
     """
     def __init__(*args, **kwargs):
         Exception.__init__(*args, **kwargs)
+
 
 class API_ERR_CHAT_VVCHAT_NO_MORE_REPUTATIONS(Exception):
     """
@@ -515,6 +571,7 @@ class API_ERR_CHAT_VVCHAT_NO_MORE_REPUTATIONS(Exception):
     def __init__(*args, **kwargs):
         Exception.__init__(*args, **kwargs)
 
+
 class MemberKickedByOrganizer(Exception):
     """
     - **API Code** : 1637
@@ -523,6 +580,7 @@ class MemberKickedByOrganizer(Exception):
     """
     def __init__(*args, **kwargs):
         Exception.__init__(*args, **kwargs)
+
 
 class LevelFiveRequiredToEnableProps(Exception):
     """
@@ -533,6 +591,7 @@ class LevelFiveRequiredToEnableProps(Exception):
     def __init__(*args, **kwargs):
         Exception.__init__(*args, **kwargs)
 
+
 class ChatViewOnly(Exception):
     """
     - **API Code** : 1663
@@ -541,6 +600,7 @@ class ChatViewOnly(Exception):
     """
     def __init__(*args, **kwargs):
         Exception.__init__(*args, **kwargs)
+
 
 class ChatMessageTooBig(Exception):
     """
@@ -551,6 +611,7 @@ class ChatMessageTooBig(Exception):
     def __init__(*args, **kwargs):
         Exception.__init__(*args, **kwargs)
 
+
 class InviteCodeNotFound(Exception):
     """
     - **API Code** : 1900
@@ -559,6 +620,7 @@ class InviteCodeNotFound(Exception):
     """
     def __init__(*args, **kwargs):
         Exception.__init__(*args, **kwargs)
+
 
 class AlreadyRequestedJoinCommunity(Exception):
     """
@@ -569,6 +631,7 @@ class AlreadyRequestedJoinCommunity(Exception):
     def __init__(*args, **kwargs):
         Exception.__init__(*args, **kwargs)
 
+
 class API_ERR_PUSH_SERVER_LIMITATION_APART(Exception):
     """
     - **API Code** : 2501
@@ -577,6 +640,7 @@ class API_ERR_PUSH_SERVER_LIMITATION_APART(Exception):
     """
     def __init__(*args, **kwargs):
         Exception.__init__(*args, **kwargs)
+
 
 class API_ERR_PUSH_SERVER_LIMITATION_COUNT(Exception):
     """
@@ -587,6 +651,7 @@ class API_ERR_PUSH_SERVER_LIMITATION_COUNT(Exception):
     def __init__(*args, **kwargs):
         Exception.__init__(*args, **kwargs)
 
+
 class API_ERR_PUSH_SERVER_LINK_NOT_IN_COMMUNITY(Exception):
     """
     - **API Code** : 2503
@@ -595,6 +660,7 @@ class API_ERR_PUSH_SERVER_LINK_NOT_IN_COMMUNITY(Exception):
     """
     def __init__(*args, **kwargs):
         Exception.__init__(*args, **kwargs)
+
 
 class API_ERR_PUSH_SERVER_LIMITATION_TIME(Exception):
     """
@@ -605,6 +671,7 @@ class API_ERR_PUSH_SERVER_LIMITATION_TIME(Exception):
     def __init__(*args, **kwargs):
         Exception.__init__(*args, **kwargs)
 
+
 class AlreadyCheckedIn(Exception):
     """
     - **API Code** : 2601
@@ -613,6 +680,7 @@ class AlreadyCheckedIn(Exception):
     """
     def __init__(*args, **kwargs):
         Exception.__init__(*args, **kwargs)
+
 
 class AlreadyUsedMonthlyRepair(Exception):
     """
@@ -623,6 +691,7 @@ class AlreadyUsedMonthlyRepair(Exception):
     def __init__(*args, **kwargs):
         Exception.__init__(*args, **kwargs)
 
+
 class AccountAlreadyRestored(Exception):
     """
     - **API Code** : 2800
@@ -631,6 +700,7 @@ class AccountAlreadyRestored(Exception):
     """
     def __init__(*args, **kwargs):
         Exception.__init__(*args, **kwargs)
+
 
 class IncorrectVerificationCode(Exception):
     """
@@ -641,6 +711,7 @@ class IncorrectVerificationCode(Exception):
     def __init__(*args, **kwargs):
         Exception.__init__(*args, **kwargs)
 
+
 class NotOwnerOfChatBubble(Exception):
     """
     - **API Code** : 3905
@@ -649,6 +720,7 @@ class NotOwnerOfChatBubble(Exception):
     """
     def __init__(*args, **kwargs):
         Exception.__init__(*args, **kwargs)
+
 
 class NotEnoughCoins(Exception):
     """
@@ -659,6 +731,7 @@ class NotEnoughCoins(Exception):
     def __init__(*args, **kwargs):
         Exception.__init__(*args, **kwargs)
 
+
 class AlreadyPlayedLottery(Exception):
     """
     - **API Code** : 4400
@@ -667,6 +740,7 @@ class AlreadyPlayedLottery(Exception):
     """
     def __init__(*args, **kwargs):
         Exception.__init__(*args, **kwargs)
+
 
 class CannotSendCoins(Exception):
     """
@@ -677,6 +751,7 @@ class CannotSendCoins(Exception):
     def __init__(*args, **kwargs):
         Exception.__init__(*args, **kwargs)
 
+
 class AminoIDAlreadyChanged(Exception):
     """
     - **API Code** : 6001
@@ -685,6 +760,7 @@ class AminoIDAlreadyChanged(Exception):
     """
     def __init__(*args, **kwargs):
         Exception.__init__(*args, **kwargs)
+
 
 class InvalidAminoID(Exception):
     """
@@ -695,6 +771,7 @@ class InvalidAminoID(Exception):
     def __init__(*args, **kwargs):
         Exception.__init__(*args, **kwargs)
 
+
 class InvalidName(Exception):
     """
     - **API Code** : 99001
@@ -704,12 +781,14 @@ class InvalidName(Exception):
     def __init__(*args, **kwargs):
         Exception.__init__(*args, **kwargs)
 
+
 class SpecifyType(Exception):
     """
     Raised when you need to specify the output of the command.
     """
     def __init__(*args, **kwargs):
         Exception.__init__(*args, **kwargs)
+
 
 class WrongType(Exception):
     """
@@ -718,12 +797,14 @@ class WrongType(Exception):
     def __init__(*args, **kwargs):
         Exception.__init__(*args, **kwargs)
 
+
 class UnknownResponse(Exception):
     """
     Raised when an error occurs but the reason is unknown.
     """
     def __init__(*args, **kwargs):
         Exception.__init__(*args, **kwargs)
+
 
 class NotLoggedIn(Exception):
     """
@@ -732,12 +813,14 @@ class NotLoggedIn(Exception):
     def __init__(*args, **kwargs):
         Exception.__init__(*args, **kwargs)
 
+
 class NoCommunity(Exception):
     """
     Raised when you try to make an action but no community was selected.
     """
     def __init__(*args, **kwargs):
         Exception.__init__(*args, **kwargs)
+
 
 class CommunityNotFound(Exception):
     """
@@ -746,12 +829,14 @@ class CommunityNotFound(Exception):
     def __init__(*args, **kwargs):
         Exception.__init__(*args, **kwargs)
 
+
 class NoChatThread(Exception):
     """
     Raised when you try to make an action but no chat was selected.
     """
     def __init__(*args, **kwargs):
         Exception.__init__(*args, **kwargs)
+
 
 class ChatRequestsBlocked(Exception):
     """
@@ -760,12 +845,14 @@ class ChatRequestsBlocked(Exception):
     def __init__(*args, **kwargs):
         Exception.__init__(*args, **kwargs)
 
+
 class NoImageSource(Exception):
     """
     Raised when you try to make an action but no image source was selected.
     """
     def __init__(*args, **kwargs):
         Exception.__init__(*args, **kwargs)
+
 
 class CannotFetchImage(Exception):
     """
@@ -774,12 +861,14 @@ class CannotFetchImage(Exception):
     def __init__(*args, **kwargs):
         Exception.__init__(*args, **kwargs)
 
+
 class FailedLogin(Exception):
     """
     Raised when you try to login but it fails.
     """
     def __init__(*args, **kwargs):
         Exception.__init__(*args, **kwargs)
+
 
 class AgeTooLow(Exception):
     """
@@ -788,12 +877,14 @@ class AgeTooLow(Exception):
     def __init__(*args, **kwargs):
         Exception.__init__(*args, **kwargs)
 
+
 class UnsupportedLanguage(Exception):
     """
     Raised when you try to use a language that isn't supported or exists.
     """
     def __init__(*args, **kwargs):
         Exception.__init__(*args, **kwargs)
+
 
 class CommunityNeeded(Exception):
     """
@@ -802,12 +893,14 @@ class CommunityNeeded(Exception):
     def __init__(*args, **kwargs):
         Exception.__init__(*args, **kwargs)
 
+
 class FlagTypeNeeded(Exception):
     """
     Raised when you try to flag a community, blog or user but a Flag Type needs to be specified.
     """
     def __init__(*args, **kwargs):
         Exception.__init__(*args, **kwargs)
+
 
 class ReasonNeeded(Exception):
     """
@@ -824,12 +917,14 @@ class TransferRequestNeeded(Exception):
     def __init__(*args, **kwargs):
         Exception.__init__(*args, **kwargs)
 
+
 class LibraryUpdateAvailable(Exception):
     """
     Raised when a new library update is available.
     """
     def __init__(*args, **kwargs):
         Exception.__init__(*args, **kwargs)
+
 
 class UserHasBeenDeleted(Exception):
     """
@@ -841,6 +936,7 @@ class UserHasBeenDeleted(Exception):
     def __init__(*args, **kwargs):
         Exception.__init__(*args, **kwargs)
 
+
 class IpTemporaryBan(Exception):
     """
     - **API Code** : 403
@@ -850,6 +946,7 @@ class IpTemporaryBan(Exception):
 
     def __init__(*args, **kwargs):
         Exception.__init__(*args, **kwargs)
+
 
 class FailedSubscribeFanClub(Exception):
     """
@@ -861,97 +958,179 @@ class FailedSubscribeFanClub(Exception):
     def __init__(*args, **kwargs):
         Exception.__init__(*args, **kwargs)
 
+
 class UnknownError(Exception):
     def __init__(*args, **kwargs):
         Exception.__init__(*args, **kwargs)
+
 
 def CheckException(data):
     try:
         data = json.loads(data)
         try:
             api_code = data["api:statuscode"]
-        except:
+        except Exception:
             raise UnknownError(data)
     except json.decoder.JSONDecodeError:
         api_code = 403
 
-    if api_code == 100: raise UnsupportedService(data)
-    elif api_code == 102: raise FileTooLarge(data)
-    elif api_code == 103 or api_code == 104: raise InvalidRequest(data)
-    elif api_code == 105: raise InvalidSession(data)
-    elif api_code == 106: raise AccessDenied(data)
-    elif api_code == 107: raise UnexistentData(data)
-    elif api_code == 110: raise ActionNotAllowed(data)
-    elif api_code == 111: raise ServiceUnderMaintenance(data)
-    elif api_code == 113: raise MessageNeeded(data)
-    elif api_code == 200: raise InvalidAccountOrPassword(data)
-    elif api_code == 201: raise AccountDisabled(data)
-    elif api_code == 213: raise InvalidEmail(data)
-    elif api_code == 214: raise InvalidPassword(data)
-    elif api_code == 215: raise EmailAlreadyTaken(data) and UnsupportedEmail(data)
-    elif api_code == 216: raise AccountDoesntExist(data)
-    elif api_code == 218: raise InvalidDevice(data)
-    elif api_code == 219: raise AccountLimitReached(data) or TooManyRequests(data)
-    elif api_code == 221: raise CantFollowYourself(data)
-    elif api_code == 225: raise UserUnavailable(data)
-    elif api_code == 229: raise YouAreBanned(data)
-    elif api_code == 230: raise UserNotMemberOfCommunity(data)
-    elif api_code == 235: raise RequestRejected(data)
-    elif api_code == 238: raise ActivateAccount(data)
-    elif api_code == 239: raise CantLeaveCommunity(data)
-    elif api_code == 240: raise ReachedTitleLength(data)
-    elif api_code == 245: raise UserHasBeenDeleted(data)
-    elif api_code == 246: raise AccountDeleted(data)
-    elif api_code == 251: raise API_ERR_EMAIL_NO_PASSWORD(data)
-    elif api_code == 257: raise API_ERR_COMMUNITY_USER_CREATED_COMMUNITIES_VERIFY(data)
-    elif api_code == 262: raise ReachedMaxTitles(data)
-    elif api_code == 270: raise VerificationRequired(data)
-    elif api_code == 271: raise API_ERR_INVALID_AUTH_NEW_DEVICE_LINK(data)
-    elif api_code == 291: raise CommandCooldown(data)
-    elif api_code == 293: raise UserBannedByTeamAmino(data)
-    elif api_code == 300: raise BadImage(data)
-    elif api_code == 313: raise InvalidThemepack(data)
-    elif api_code == 314: raise InvalidVoiceNote(data)
-    elif api_code == 403: raise IpTemporaryBan(data)
-    elif api_code == 500 or api_code == 700 or api_code == 1600: raise RequestedNoLongerExists(data)
-    elif api_code == 503: raise PageRepostedTooRecently(data)
-    elif api_code == 551: raise InsufficientLevel(data)
-    elif api_code == 702: raise WallCommentingDisabled(data)
-    elif api_code == 801: raise CommunityNoLongerExists(data)
-    elif api_code == 802: raise InvalidCodeOrLink(data)
-    elif api_code == 805: raise CommunityNameAlreadyTaken(data)
-    elif api_code == 806: raise CommunityCreateLimitReached(data)
-    elif api_code == 814: raise CommunityDisabled(data)
-    elif api_code == 833: raise CommunityDeleted(data)
-    elif api_code == 1501: raise DuplicatePollOption(data)
-    elif api_code == 1507: raise ReachedMaxPollOptions(data)
-    elif api_code == 1602: raise TooManyChats(data)
-    elif api_code == 1605: raise ChatFull(data)
-    elif api_code == 1606: raise TooManyInviteUsers(data)
-    elif api_code == 1611: raise ChatInvitesDisabled(data)
-    elif api_code == 1612: raise RemovedFromChat(data)
-    elif api_code == 1613: raise UserNotJoined(data)
-    elif api_code == 1627: raise API_ERR_CHAT_VVCHAT_NO_MORE_REPUTATIONS(data)
-    elif api_code == 1637: raise MemberKickedByOrganizer(data)
-    elif api_code == 1661: raise LevelFiveRequiredToEnableProps(data)
-    elif api_code == 1663: raise ChatViewOnly(data)
-    elif api_code == 1664: raise ChatMessageTooBig(data)
-    elif api_code == 1900: raise InviteCodeNotFound(data)
-    elif api_code == 2001: raise AlreadyRequestedJoinCommunity(data)
-    elif api_code == 2501: raise API_ERR_PUSH_SERVER_LIMITATION_APART(data)
-    elif api_code == 2502: raise API_ERR_PUSH_SERVER_LIMITATION_COUNT(data)
-    elif api_code == 2503: raise API_ERR_PUSH_SERVER_LINK_NOT_IN_COMMUNITY(data)
-    elif api_code == 2504: raise API_ERR_PUSH_SERVER_LIMITATION_TIME(data)
-    elif api_code == 2601: raise AlreadyCheckedIn(data)
-    elif api_code == 2611: raise AlreadyUsedMonthlyRepair(data)
-    elif api_code == 2800: raise AccountAlreadyRestored(data)
-    elif api_code == 3102: raise IncorrectVerificationCode(data)
-    elif api_code == 3905: raise NotOwnerOfChatBubble(data)
-    elif api_code == 4300: raise NotEnoughCoins(data)
-    elif api_code == 4400: raise AlreadyPlayedLottery(data)
-    elif api_code == 4500 or api_code == 4501: raise CannotSendCoins(data)
-    elif api_code == 4805: raise FailedSubscribeFanClub(data)
-    elif api_code == 6001: raise AminoIDAlreadyChanged(data)
-    elif api_code == 6002: raise InvalidAminoID(data)
-    elif api_code == 9901: raise InvalidName(data)
-    else: raise Exception(data)
+    if api_code == 100:
+        raise UnsupportedService(data)
+    elif api_code == 102:
+        raise FileTooLarge(data)
+    elif api_code == 103 or api_code == 104:
+        raise InvalidRequest(data)
+    elif api_code == 105:
+        raise InvalidSession(data)
+    elif api_code == 106:
+        raise AccessDenied(data)
+    elif api_code == 107:
+        raise UnexistentData(data)
+    elif api_code == 110:
+        raise ActionNotAllowed(data)
+    elif api_code == 111:
+        raise ServiceUnderMaintenance(data)
+    elif api_code == 113:
+        raise MessageNeeded(data)
+    elif api_code == 200:
+        raise InvalidAccountOrPassword(data)
+    elif api_code == 201:
+        raise AccountDisabled(data)
+    elif api_code == 213:
+        raise InvalidEmail(data)
+    elif api_code == 214:
+        raise InvalidPassword(data)
+    elif api_code == 215:
+        raise EmailAlreadyTaken(data) and UnsupportedEmail(data)
+    elif api_code == 216:
+        raise AccountDoesntExist(data)
+    elif api_code == 218:
+        raise InvalidDevice(data)
+    elif api_code == 219:
+        raise AccountLimitReached(data) or TooManyRequests(data)
+    elif api_code == 221:
+        raise CantFollowYourself(data)
+    elif api_code == 225:
+        raise UserUnavailable(data)
+    elif api_code == 229:
+        raise YouAreBanned(data)
+    elif api_code == 230:
+        raise UserNotMemberOfCommunity(data)
+    elif api_code == 235:
+        raise RequestRejected(data)
+    elif api_code == 238:
+        raise ActivateAccount(data)
+    elif api_code == 239:
+        raise CantLeaveCommunity(data)
+    elif api_code == 240:
+        raise ReachedTitleLength(data)
+    elif api_code == 245:
+        raise UserHasBeenDeleted(data)
+    elif api_code == 246:
+        raise AccountDeleted(data)
+    elif api_code == 251:
+        raise API_ERR_EMAIL_NO_PASSWORD(data)
+    elif api_code == 257:
+        raise API_ERR_COMMUNITY_USER_CREATED_COMMUNITIES_VERIFY(data)
+    elif api_code == 262:
+        raise ReachedMaxTitles(data)
+    elif api_code == 270:
+        raise VerificationRequired(data)
+    elif api_code == 271:
+        raise API_ERR_INVALID_AUTH_NEW_DEVICE_LINK(data)
+    elif api_code == 291:
+        raise CommandCooldown(data)
+    elif api_code == 293:
+        raise UserBannedByTeamAmino(data)
+    elif api_code == 300:
+        raise BadImage(data)
+    elif api_code == 313:
+        raise InvalidThemepack(data)
+    elif api_code == 314:
+        raise InvalidVoiceNote(data)
+    elif api_code == 403:
+        raise IpTemporaryBan(data)
+    elif api_code == 500 or api_code == 700 or api_code == 1600:
+        raise RequestedNoLongerExists(data)
+    elif api_code == 503:
+        raise PageRepostedTooRecently(data)
+    elif api_code == 551:
+        raise InsufficientLevel(data)
+    elif api_code == 702:
+        raise WallCommentingDisabled(data)
+    elif api_code == 801:
+        raise CommunityNoLongerExists(data)
+    elif api_code == 802:
+        raise InvalidCodeOrLink(data)
+    elif api_code == 805:
+        raise CommunityNameAlreadyTaken(data)
+    elif api_code == 806:
+        raise CommunityCreateLimitReached(data)
+    elif api_code == 814:
+        raise CommunityDisabled(data)
+    elif api_code == 833:
+        raise CommunityDeleted(data)
+    elif api_code == 1501:
+        raise DuplicatePollOption(data)
+    elif api_code == 1507:
+        raise ReachedMaxPollOptions(data)
+    elif api_code == 1602:
+        raise TooManyChats(data)
+    elif api_code == 1605:
+        raise ChatFull(data)
+    elif api_code == 1606:
+        raise TooManyInviteUsers(data)
+    elif api_code == 1611:
+        raise ChatInvitesDisabled(data)
+    elif api_code == 1612:
+        raise RemovedFromChat(data)
+    elif api_code == 1613:
+        raise UserNotJoined(data)
+    elif api_code == 1627:
+        raise API_ERR_CHAT_VVCHAT_NO_MORE_REPUTATIONS(data)
+    elif api_code == 1637:
+        raise MemberKickedByOrganizer(data)
+    elif api_code == 1661:
+        raise LevelFiveRequiredToEnableProps(data)
+    elif api_code == 1663:
+        raise ChatViewOnly(data)
+    elif api_code == 1664:
+        raise ChatMessageTooBig(data)
+    elif api_code == 1900:
+        raise InviteCodeNotFound(data)
+    elif api_code == 2001:
+        raise AlreadyRequestedJoinCommunity(data)
+    elif api_code == 2501:
+        raise API_ERR_PUSH_SERVER_LIMITATION_APART(data)
+    elif api_code == 2502:
+        raise API_ERR_PUSH_SERVER_LIMITATION_COUNT(data)
+    elif api_code == 2503:
+        raise API_ERR_PUSH_SERVER_LINK_NOT_IN_COMMUNITY(data)
+    elif api_code == 2504:
+        raise API_ERR_PUSH_SERVER_LIMITATION_TIME(data)
+    elif api_code == 2601:
+        raise AlreadyCheckedIn(data)
+    elif api_code == 2611:
+        raise AlreadyUsedMonthlyRepair(data)
+    elif api_code == 2800:
+        raise AccountAlreadyRestored(data)
+    elif api_code == 3102:
+        raise IncorrectVerificationCode(data)
+    elif api_code == 3905:
+        raise NotOwnerOfChatBubble(data)
+    elif api_code == 4300:
+        raise NotEnoughCoins(data)
+    elif api_code == 4400:
+        raise AlreadyPlayedLottery(data)
+    elif api_code == 4500 or api_code == 4501:
+        raise CannotSendCoins(data)
+    elif api_code == 4805:
+        raise FailedSubscribeFanClub(data)
+    elif api_code == 6001:
+        raise AminoIDAlreadyChanged(data)
+    elif api_code == 6002:
+        raise InvalidAminoID(data)
+    elif api_code == 9901:
+        raise InvalidName(data)
+    else:
+        raise Exception(data)

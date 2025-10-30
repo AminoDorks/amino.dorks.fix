@@ -1,12 +1,3 @@
-from locale import getdefaultlocale
-from requests import Session
-from threading import Thread
-
-from .lib.util.models import ClientKwargs
-from .lib.util.headers import ApisHeaders
-from .lib.util import headers
-from .lib.util.helpers import gen_headers
-
 from time import (
     timezone,
     sleep,
@@ -41,12 +32,13 @@ from .constants import (
     GENDERS_MAP,
     MEDIA_TYPES_MAP,
     COMMENTS_SORTING_MAP,
-    SUPPORTED_LANGAUGES
+    SUPPORTED_LANGAUGES,
+    GENERATOR_HEADERS
 )
 from .lib.util.helpers import (
     gen_deviceId,
     sid_to_uid,
-    get_credentials
+    get_credentials_sync
 )
 from .lib.util.objects import (
     UserProfile,
@@ -61,6 +53,14 @@ from .lib.util.objects import (
     FromCode,
     UserProfileCountList
 )
+
+from locale import getdefaultlocale
+from requests import Session
+from threading import Thread
+
+from .lib.util.models import ClientKwargs
+from .lib.util.headers import ApisHeaders
+from .lib.util import headers
 
 
 class Client(Callbacks, SocketHandler):
@@ -112,7 +112,7 @@ class Client(Callbacks, SocketHandler):
             self,
             client=self,
             socket_trace=kwargs.get("socket_trace", False),
-            debug=kwargs.get("socketDebugging", False),
+            debug=kwargs.get("socket_debugging", False),
             socket_enabled=kwargs.get("socket_enabled", True)
         )
         Callbacks.__init__(self, self)
@@ -121,13 +121,13 @@ class Client(Callbacks, SocketHandler):
         self.__api_key = api_key
         self.__device_id = deviceId
         self.__proxies = proxies
-        self.__certificate_path = kwargs.get("certificatePath")
+        self.__certificate_path = kwargs.get("certificate_path")
         self.__active_live_chats = []
         self.__stop_loop = False
         self.__sid = None
         self._socket_enabled = kwargs.get("socket_enabled")
         self._profile: UserProfile = UserProfile(None)
-        gen_headers["Authorization"] = api_key
+        GENERATOR_HEADERS["Authorization"] = api_key
 
     @property
     def profile(self) -> UserProfile:
@@ -179,7 +179,7 @@ class Client(Callbacks, SocketHandler):
             return
 
         data = dumps(
-            get_credentials(
+            get_credentials_sync(
                 self._session,
                 self._profile.userId
             )
@@ -2141,7 +2141,6 @@ class Client(Callbacks, SocketHandler):
 
         return UserProfileCountList(loads(response.text)).UserProfileCountList
 
-    # TODO: to add identified community type
     def link_identify(self, code: str) -> Any:
         """
         Identifies a community link.

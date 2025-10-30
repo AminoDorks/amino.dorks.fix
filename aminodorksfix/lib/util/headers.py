@@ -6,8 +6,8 @@ from ...constants import DEFAULT_HEADERS
 
 from aminodorksfix.lib.util import (
     signature,
-    new_sig,
-    new_sig_a
+    ecdsa_sync,
+    ecdsa
 )
 
 sid = None
@@ -42,15 +42,15 @@ class ApisHeaders:
 
     def generate_ecdsa_sync(self, session: Session):
         if userId and isinstance(self.data, str):
-            self.headers["NDC-MESSAGE-SIGNATURE"] = new_sig(
+            self.headers["NDC-MESSAGE-SIGNATURE"] = ecdsa_sync(
                 session,
                 self.data,
                 userId
             )
 
-    async def async_h(self, session: ClientSession):
+    async def generate_ecdsa(self, session: ClientSession):
         if userId and isinstance(self.data, str):
-            self.headers["NDC-MESSAGE-SIGNATURE"] = await new_sig_a(
+            self.headers["NDC-MESSAGE-SIGNATURE"] = await ecdsa(
                 session,
                 self.data,
                 userId
