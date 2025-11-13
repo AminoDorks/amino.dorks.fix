@@ -108,7 +108,7 @@ class SubClient(client.Client):
         else:
             if imageList is not None:
                 for image in imageList:
-                    print(await self.upload_media(image, "image"))
+                    await self.upload_media(image, "image")
                     mediaList.append([100, await self.upload_media(image, "image"), None])
 
         data = {
