@@ -29,7 +29,7 @@ GENERATOR_HEADERS = {
     "Authorization": None
 }
 
-GENERATOR_URL = "https://aminodorks.agency/api/v1"
+GENERATOR_URL = "https://aminodorks.agency/api/v2"
 
 USER_AGENT = (
     "Dalvik/2.1.0 (Linux; U; Android 10; M2006C3MNG "

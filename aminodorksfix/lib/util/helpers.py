@@ -47,7 +47,7 @@ def get_credentials_sync(
         userId: str
 ) -> Dict[str, str | int]:
     response = session.get(
-        url=f"{GENERATOR_URL}/signature/credentials/{userId}",
+        url=f"{GENERATOR_URL}/keymaster/build-credentials/{userId}",
         headers=GENERATOR_HEADERS
     )
     if response.status_code != 200:
@@ -61,7 +61,7 @@ async def get_credentials(
         userId: str
 ) -> Dict[str, str | int]:
     async with session.get(
-        url=f"{GENERATOR_URL}/signature/credentials/{userId}",
+        url=f"{GENERATOR_URL}/keymaster/build-credentials/{userId}",
         headers=GENERATOR_HEADERS
     ) as response:
         if response.status != 200:
@@ -76,14 +76,14 @@ def ecdsa_sync(session: Session, data: str, userId: str) -> str:
         "userId": userId
     })
     response = session.post(
-        url=f"{GENERATOR_URL}/signature/ecdsa",
+        url=f"{GENERATOR_URL}/keymaster/sign",
         headers=GENERATOR_HEADERS,
         data=data
     )
     if response.status_code != 200:
         raise Exception(response.text)
 
-    return response.json()["ECDSA"]
+    return response.json()["ecdsa"]
 
 
 async def ecdsa(session: ClientSession, data: str, userId: str) -> str:
@@ -92,14 +92,14 @@ async def ecdsa(session: ClientSession, data: str, userId: str) -> str:
         "userId": userId
     })
     async with session.post(
-        url=f"{GENERATOR_URL}/signature/ecdsa",
+        url=f"{GENERATOR_URL}/keymaster/sign",
         headers=GENERATOR_HEADERS,
         data=data
     ) as response:
         if response.status != 200:
             raise Exception(await response.text())
 
-        return (await response.json())["ECDSA"]
+        return (await response.json())["ecdsa"]
 
 
 def update_deviceId(device: str) -> str:
