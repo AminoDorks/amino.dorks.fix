@@ -1,7 +1,4 @@
-from setuptools import (
-    setup,
-    find_packages
-)
+from setuptools import find_packages, setup
 
 requirements = [
     "requests",
@@ -10,7 +7,7 @@ requirements = [
     "json_minify",
     "six",
     "aiohttp",
-    "websockets"
+    "websockets",
 ]
 
 with open("README.md", "r", encoding="utf-8") as stream:
@@ -18,7 +15,7 @@ with open("README.md", "r", encoding="utf-8") as stream:
 
 setup(
     name="amino.dorks.fix",
-    version="3.9.8.7",
+    version="3.9.8.8",
     author="misterio",
     author_email="misterio1234321@gmail.com",
     description="Library for Amino. Telegram - https://t.me/aminodorks",
@@ -28,18 +25,18 @@ setup(
     packages=find_packages(),
     install_requires=requirements,
     keywords=[
-        'aminoapps',
-        'amino.fix',
-        'amino',
-        'aminodorks',
-        'amino-bot',
-        'narvii',
-        'api',
-        'python',
-        'python3',
-        'python3.x',
-        'misterio060'
+        "aminoapps",
+        "amino.fix",
+        "amino",
+        "aminodorks",
+        "amino-bot",
+        "narvii",
+        "api",
+        "python",
+        "python3",
+        "python3.x",
+        "misterio060",
     ],
-    python_requires='>=3.10',
+    python_requires=">=3.10",
     license="MIT",
 )
