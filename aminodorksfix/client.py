@@ -140,8 +140,12 @@ class Client(Callbacks, SocketHandler):
     @property
     def sid(self) -> str | None:
         return self.__sid
+    
+    @property
+    def session(self) -> Session:
+        return self._session
 
-    def _parse_headers(
+    def parse_headers(
             self,
             data: str = None,
             type: str = None
@@ -186,7 +190,7 @@ class Client(Callbacks, SocketHandler):
         )
         response = self._session.post(
             url=f"{API_URL}/g/s/security/public_key",
-            headers=self._parse_headers(data=data),
+            headers=self.parse_headers(data=data),
             data=data,
             proxies=self.__proxies,
             verify=self.__certificate_path
@@ -416,7 +420,7 @@ class Client(Callbacks, SocketHandler):
         })
         response = self._session.post(
             url=f"{API_URL}/g/s/auth/login",
-            headers=self._parse_headers(data=data),
+            headers=self.parse_headers(data=data),
             data=data,
             proxies=self.__proxies,
             verify=self.__certificate_path
@@ -451,7 +455,7 @@ class Client(Callbacks, SocketHandler):
         })
         response = self._session.post(
             url=f"{API_URL}/g/s/auth/login",
-            headers=self._parse_headers(data=data),
+            headers=self.parse_headers(data=data),
             data=data,
             proxies=self.__proxies,
             verify=self.__certificate_path
@@ -501,7 +505,7 @@ class Client(Callbacks, SocketHandler):
 
         response = self._session.post(
             url=f"{API_URL}/g/s/auth/login",
-            headers=self._parse_headers(data=data),
+            headers=self.parse_headers(data=data),
             data=data,
             proxies=self.__proxies,
             verify=self.__certificate_path
@@ -548,7 +552,7 @@ class Client(Callbacks, SocketHandler):
 
         response = self._session.post(
             url=f"{API_URL}/g/s/account/delete-request/cancel",
-            headers=self._parse_headers(data=data),
+            headers=self.parse_headers(data=data),
             data=data, proxies=self.__proxies,
             verify=self.__certificate_path
         )
@@ -577,7 +581,7 @@ class Client(Callbacks, SocketHandler):
 
         response = self._session.post(
             url=f"{API_URL}/g/s/auth/logout",
-            headers=self._parse_headers(data=data),
+            headers=self.parse_headers(data=data),
             data=data,
             proxies=self.__proxies,
             verify=self.__certificate_path
@@ -623,7 +627,7 @@ class Client(Callbacks, SocketHandler):
         response = self._session.post(
             url=f"{API_URL}/g/s/persona/profile/basic",
             data=data,
-            headers=self._parse_headers(data=data),
+            headers=self.parse_headers(data=data),
             proxies=self.__proxies,
             verify=self.__certificate_path
         )
@@ -656,7 +660,7 @@ class Client(Callbacks, SocketHandler):
 
         response = self._session.post(
             url=f"{API_URL}/g/s/auth/check-security-validation",
-            headers=self._parse_headers(data=data),
+            headers=self.parse_headers(data=data),
             data=data, proxies=self.__proxies,
             verify=self.__certificate_path
         )
@@ -696,7 +700,7 @@ class Client(Callbacks, SocketHandler):
         data = dumps(data)
         response = self._session.post(
             url=f"{API_URL}/g/s/auth/request-security-validation",
-            headers=self._parse_headers(data=data),
+            headers=self.parse_headers(data=data),
             data=data,
             proxies=self.__proxies,
             verify=self.__certificate_path,
@@ -730,7 +734,7 @@ class Client(Callbacks, SocketHandler):
 
         response = self._session.post(
             url=f"{API_URL}/g/s/auth/activate-email",
-            headers=self._parse_headers(data=data),
+            headers=self.parse_headers(data=data),
             data=data,
             proxies=self.__proxies,
             verify=self.__certificate_path
@@ -760,7 +764,7 @@ class Client(Callbacks, SocketHandler):
 
         response = self._session.post(
             url=f"{API_URL}/g/s/account/delete-request",
-            headers=self._parse_headers(data=data),
+            headers=self.parse_headers(data=data),
             data=data,
             proxies=self.__proxies,
             verify=self.__certificate_path
@@ -802,7 +806,7 @@ class Client(Callbacks, SocketHandler):
 
         response = self._session.post(
             url=f"{API_URL}/g/s/auth/reset-password",
-            headers=self._parse_headers(data=data),
+            headers=self.parse_headers(data=data),
             data=data,
             proxies=self.__proxies,
             verify=self.__certificate_path)
@@ -835,7 +839,7 @@ class Client(Callbacks, SocketHandler):
 
         response = self._session.post(
             url=f"{API_URL}/g/s/device",
-            headers=self._parse_headers(data=data),
+            headers=self.parse_headers(data=data),
             data=data,
             proxies=self.__proxies,
             verify=self.__certificate_path
@@ -857,7 +861,7 @@ class Client(Callbacks, SocketHandler):
         """
         response = self._session.get(
             url=f"{API_URL}/g/s/account",
-            headers=self._parse_headers(),
+            headers=self.parse_headers(),
             proxies=self.__proxies,
             verify=self.__certificate_path
         )
@@ -923,7 +927,7 @@ class Client(Callbacks, SocketHandler):
         """
         response = self._session.get(
             url=f"{API_URL}/g/s/eventlog/profile?language=en",
-            headers=self._parse_headers(),
+            headers=self.parse_headers(),
             proxies=self.__proxies,
             verify=self.__certificate_path
         )
@@ -949,7 +953,7 @@ class Client(Callbacks, SocketHandler):
         response = self._session.get(
             url=f"{API_URL}/g/s/community/joined" +
                 f"?v=1&start={start}&size={size}",
-            headers=self._parse_headers(),
+            headers=self.parse_headers(),
             proxies=self.__proxies,
             verify=self.__certificate_path
         )
@@ -968,7 +972,7 @@ class Client(Callbacks, SocketHandler):
         response = self._session.get(
             url=f"{API_URL}/g/s/community/joined" +
                 f"?v=1&start={start}&size={size}",
-            headers=self._parse_headers(),
+            headers=self.parse_headers(),
             proxies=self.__proxies,
             verify=self.__certificate_path
         )
@@ -994,7 +998,7 @@ class Client(Callbacks, SocketHandler):
         """
         response = self._session.get(
             url=f"{API_URL}/g/s/user-profile/{userId}",
-            headers=self._parse_headers(),
+            headers=self.parse_headers(),
             proxies=self.__proxies,
             verify=self.__certificate_path
         )
@@ -1020,7 +1024,7 @@ class Client(Callbacks, SocketHandler):
             url=f"{API_URL}/g/s-x{comId}/community/info?" +
                 "withInfluencerList=1&withTopicList=true" +
                 "&influencerListOrderStrategy=fansCount",
-            headers=self._parse_headers(),
+            headers=self.parse_headers(),
             proxies=self.__proxies,
             verify=self.__certificate_path
         )
@@ -1044,7 +1048,7 @@ class Client(Callbacks, SocketHandler):
         """
         response = self._session.get(
             url=f"{API_URL}/g/s/search/amino-id-and-link?q={aminoId}",
-            headers=self._parse_headers(),
+            headers=self.parse_headers(),
             proxies=self.__proxies,
             verify=self.__certificate_path
         )
@@ -1082,7 +1086,7 @@ class Client(Callbacks, SocketHandler):
         response = self._session.get(
             url=f"{API_URL}/g/s/user-profile/{userId}/joined?" +
                 f"start={start}&size={size}",
-            headers=self._parse_headers(),
+            headers=self.parse_headers(),
             proxies=self.__proxies,
             verify=self.__certificate_path
         )
@@ -1116,7 +1120,7 @@ class Client(Callbacks, SocketHandler):
         response = self._session.get(
             url=f"{API_URL}/g/s/user-profile/{userId}/member?" +
                 f"start={start}&size={size}",
-            headers=self._parse_headers(),
+            headers=self.parse_headers(),
             proxies=self.__proxies,
             verify=self.__certificate_path
         )
@@ -1147,7 +1151,7 @@ class Client(Callbacks, SocketHandler):
         """
         response = self._session.get(
             url=f"{API_URL}/g/s/block?start={start}&size={size}",
-            headers=self._parse_headers(),
+            headers=self.parse_headers(),
             proxies=self.__proxies,
             verify=self.__certificate_path
         )
@@ -1173,7 +1177,7 @@ class Client(Callbacks, SocketHandler):
         """
         response = self._session.get(
             url=f"{API_URL}/g/s/block/full-list?start={start}&size={size}",
-            headers=self._parse_headers(),
+            headers=self.parse_headers(),
             proxies=self.__proxies,
             verify=self.__certificate_path
         )
@@ -1212,7 +1216,7 @@ class Client(Callbacks, SocketHandler):
         response = self._session.get(
             url=f"{API_URL}/g/s/user-profile/{userId}/g-comment?" +
                 f"sort={sorting_type}&start={start}&size={size}",
-            headers=self._parse_headers(),
+            headers=self.parse_headers(),
             proxies=self.__proxies,
             verify=self.__certificate_path
         )
@@ -1254,7 +1258,7 @@ class Client(Callbacks, SocketHandler):
         response = self._session.post(
             url=f"{API_URL}/g/s/{"g-flag" if asGuest else "flag"}",
             data=data,
-            headers=self._parse_headers(data=data),
+            headers=self.parse_headers(data=data),
             proxies=self.__proxies,
             verify=self.__certificate_path
         )
@@ -1282,7 +1286,7 @@ class Client(Callbacks, SocketHandler):
         response = self._session.post(
             url=f"{API_URL}/g/s/user-profile/" +
                 f"{self._profile.userId}/joined",
-            headers=self._parse_headers(data=data),
+            headers=self.parse_headers(data=data),
             data=data,
             proxies=self.__proxies,
             verify=self.__certificate_path
@@ -1308,7 +1312,7 @@ class Client(Callbacks, SocketHandler):
         response = self._session.delete(
             url=f"{API_URL}/g/s/user-profile/" +
             f"{userId}/member/{self._profile.userId}",
-            headers=self._parse_headers(),
+            headers=self.parse_headers(),
             proxies=self.__proxies,
             verify=self.__certificate_path
         )
@@ -1331,7 +1335,7 @@ class Client(Callbacks, SocketHandler):
         """
         response = self._session.post(
             url=f"{API_URL}/g/s/block/{userId}",
-            headers=self._parse_headers(),
+            headers=self.parse_headers(),
             proxies=self.__proxies,
             verify=self.__certificate_path
         )
@@ -1354,7 +1358,7 @@ class Client(Callbacks, SocketHandler):
         """
         response = self._session.delete(
             url=f"{API_URL}/g/s/block/{userId}",
-            headers=self._parse_headers(),
+            headers=self.parse_headers(),
             proxies=self.__proxies,
             verify=self.__certificate_path
         )
@@ -1385,7 +1389,7 @@ class Client(Callbacks, SocketHandler):
         response = self._session.post(
             url=f"{API_URL}/x{comId}/s/community/join",
             data=dumped_data,
-            headers=self._parse_headers(data=dumped_data),
+            headers=self.parse_headers(data=dumped_data),
             proxies=self.__proxies,
             verify=self.__certificate_path
         )
@@ -1414,7 +1418,7 @@ class Client(Callbacks, SocketHandler):
         response = self._session.post(
             url=f"{API_URL}/x{comId}/s/community/membership-request",
             data=data,
-            headers=self._parse_headers(data=data),
+            headers=self.parse_headers(data=data),
             proxies=self.__proxies,
             verify=self.__certificate_path
         )
@@ -1437,7 +1441,7 @@ class Client(Callbacks, SocketHandler):
         """
         response = self._session.post(
             url=f"{API_URL}/x{comId}/s/community/leave",
-            headers=self._parse_headers(
+            headers=self.parse_headers(
                 type="application/x-www-form-urlencoded"
             ),
             proxies=self.__proxies,
@@ -1479,7 +1483,7 @@ class Client(Callbacks, SocketHandler):
         response = self._session.post(
             url=f"{API_URL}/x{comId}/s/{"g-flag" if isGuest else "flag"}",
             data=data,
-            headers=self._parse_headers(data=data),
+            headers=self.parse_headers(data=data),
             proxies=self.__proxies,
             verify=self.__certificate_path
         )
@@ -1548,7 +1552,7 @@ class Client(Callbacks, SocketHandler):
         data = dumps(data)
         response = self._session.post(
             url=f"{API_URL}/g/s/user-profile/{self._profile.userId}",
-            headers=self._parse_headers(data=data),
+            headers=self.parse_headers(data=data),
             data=data,
             proxies=self.__proxies,
             verify=self.__certificate_path
@@ -1576,7 +1580,7 @@ class Client(Callbacks, SocketHandler):
         })
         response = self._session.post(
             url=f"{API_URL}/g/s/account/change-amino-id",
-            headers=self._parse_headers(data=data),
+            headers=self.parse_headers(data=data),
             data=data,
             proxies=self.__proxies,
             verify=self.__certificate_path
@@ -1601,7 +1605,7 @@ class Client(Callbacks, SocketHandler):
         """
         response = self._session.get(
             url=f"{API_URL}/g/s/user-profile/{userId}/linked-community",
-            headers=self._parse_headers(),
+            headers=self.parse_headers(),
             proxies=self.__proxies,
             verify=self.__certificate_path
         )
@@ -1627,7 +1631,7 @@ class Client(Callbacks, SocketHandler):
         """
         response = self._session.get(
             url=f"{API_URL}/g/s/user-profile/{userId}/linked-community",
-            headers=self._parse_headers(),
+            headers=self.parse_headers(),
             proxies=self.__proxies,
             verify=self.__certificate_path
         )
@@ -1654,7 +1658,7 @@ class Client(Callbacks, SocketHandler):
         response = self._session.post(
             url=f"{API_URL}/g/s/user-profile/{self._profile.userId}" +
                 "/linked-community/reorder",
-            headers=self._parse_headers(data=data),
+            headers=self.parse_headers(data=data),
             data=data, proxies=self.__proxies,
             verify=self.__certificate_path
         )
@@ -1678,7 +1682,7 @@ class Client(Callbacks, SocketHandler):
         response = self._session.post(
             url=f"{API_URL}/g/s/user-profile" +
                 f"/{self._profile.userId}/linked-community/{comId}",
-            headers=self._parse_headers(),
+            headers=self.parse_headers(),
             proxies=self.__proxies,
             verify=self.__certificate_path
         )
@@ -1702,7 +1706,7 @@ class Client(Callbacks, SocketHandler):
         response = self._session.delete(
             url=f"{API_URL}/g/s/user-profile/" +
                 f"{self._profile.userId}/linked-community/{comId}",
-            headers=self._parse_headers(),
+            headers=self.parse_headers(),
             proxies=self.__proxies,
             verify=self.__certificate_path
         )
@@ -1743,7 +1747,7 @@ class Client(Callbacks, SocketHandler):
 
         response = self._session.post(
             url=f"{API_URL}/g/s/user-profile/{userId}/g-comment",
-            headers=self._parse_headers(data=data),
+            headers=self.parse_headers(data=data),
             data=data,
             proxies=self.__proxies,
             verify=self.__certificate_path
@@ -1768,7 +1772,7 @@ class Client(Callbacks, SocketHandler):
         """
         response = self._session.delete(
             url=f"{API_URL}/g/s/user-profile/{userId}/g-comment/{commentId}",
-            headers=self._parse_headers(),
+            headers=self.parse_headers(),
             proxies=self.__proxies,
             verify=self.__certificate_path
         )
@@ -1799,7 +1803,7 @@ class Client(Callbacks, SocketHandler):
         response = self._session.post(
             url=f"{API_URL}/g/s/user-profile/{userId}" +
                 f"/comment/{commentId}/g-vote?cv=1.2&value=1",
-            headers=self._parse_headers(data=data),
+            headers=self.parse_headers(data=data),
             data=data,
             proxies=self.__proxies,
             verify=self.__certificate_path
@@ -1825,7 +1829,7 @@ class Client(Callbacks, SocketHandler):
         response = self._session.delete(
             url=f"{API_URL}/g/s/user-profile/{userId}/" +
             f"comment/{commentId}/g-vote?eventSource=UserProfileView",
-            headers=self._parse_headers(),
+            headers=self.parse_headers(),
             proxies=self.__proxies,
             verify=self.__certificate_path
         )
@@ -1847,7 +1851,7 @@ class Client(Callbacks, SocketHandler):
         """
         response = self._session.get(
             url=f"{API_URL}/g/s/membership?force=true",
-            headers=self._parse_headers(),
+            headers=self.parse_headers(),
             proxies=self.__proxies,
             verify=self.__certificate_path
         )
@@ -1883,7 +1887,7 @@ class Client(Callbacks, SocketHandler):
         response = self._session.get(
             url=f"{API_URL}/g/s/announcement?" +
                 f"language={language}&start={start}&size={size}",
-            headers=self._parse_headers(),
+            headers=self.parse_headers(),
             proxies=self.__proxies,
             verify=self.__certificate_path
         )
@@ -1907,7 +1911,7 @@ class Client(Callbacks, SocketHandler):
         """
         response = self._session.get(
             url=f"{API_URL}/g/s/wallet",
-            headers=self._parse_headers(),
+            headers=self.parse_headers(),
             proxies=self.__proxies,
             verify=self.__certificate_path
         )
@@ -1936,7 +1940,7 @@ class Client(Callbacks, SocketHandler):
         """
         response = self._session.get(
             url=f"{API_URL}/g/s/wallet/coin/history?start={start}&size={size}",
-            headers=self._parse_headers(),
+            headers=self.parse_headers(),
             proxies=self.__proxies,
             verify=self.__certificate_path
         )
@@ -1984,7 +1988,7 @@ class Client(Callbacks, SocketHandler):
         """
         response = self._session.get(
             url=f"{API_URL}/g/s/link-resolution?q={code}",
-            headers=self._parse_headers(),
+            headers=self.parse_headers(),
             proxies=self.__proxies,
             verify=self.__certificate_path
         )
@@ -2024,7 +2028,7 @@ class Client(Callbacks, SocketHandler):
         response = self._session.post(
             url=f"{API_URL}/g/{f"s-x{comId}" if comId else "s"}" +
                 "/link-resolution",
-            headers=self._parse_headers(data=data),
+            headers=self.parse_headers(data=data),
             data=data,
             proxies=self.__proxies,
             verify=self.__certificate_path
@@ -2049,7 +2053,7 @@ class Client(Callbacks, SocketHandler):
         response = self._session.get(
             url=f"{API_URL}/g/s/community-collection/" +
                 "supported-languages?start=0&size=100",
-            headers=self._parse_headers(),
+            headers=self.parse_headers(),
             proxies=self.__proxies,
             verify=self.__certificate_path
         )
@@ -2072,7 +2076,7 @@ class Client(Callbacks, SocketHandler):
         """
         response = self._session.post(
             url=f"{API_URL}/g/s/coupon/new-user-coupon/claim",
-            headers=self._parse_headers(),
+            headers=self.parse_headers(),
             proxies=self.__proxies,
             verify=self.__certificate_path
         )
@@ -2101,7 +2105,7 @@ class Client(Callbacks, SocketHandler):
         response = self._session.get(
             url=f"{API_URL}/g/s/store/subscription?" +
                 f"objectType=122&start={start}&size={size}",
-            headers=self._parse_headers(),
+            headers=self.parse_headers(),
             proxies=self.__proxies,
             verify=self.__certificate_path
         )
@@ -2132,7 +2136,7 @@ class Client(Callbacks, SocketHandler):
         response = self._session.get(
             url=f"{API_URL}/g/s/user-profile?" +
                 f"type={type}&start={start}&size={size}",
-            headers=self._parse_headers(),
+            headers=self.parse_headers(),
             proxies=self.__proxies,
             verify=self.__certificate_path
         )
@@ -2156,7 +2160,7 @@ class Client(Callbacks, SocketHandler):
         response = self._session.get(
             f"{API_URL}/g/s/community/link-identify" +
             f"?q=http%3A%2F%2Faminoapps.com%2Finvite%2F{code}",
-            headers=self._parse_headers(),
+            headers=self.parse_headers(),
             proxies=self.__proxies,
             verify=self.__certificate_path
         )
@@ -2184,7 +2188,7 @@ class Client(Callbacks, SocketHandler):
 
         response = self._session.post(
             url=f"{API_URL}/g/s/wallet/ads/config",
-            headers=self._parse_headers(data=data),
+            headers=self.parse_headers(data=data),
             data=data,
             proxies=self.__proxies,
             verify=self.__certificate_path
@@ -2209,7 +2213,7 @@ class Client(Callbacks, SocketHandler):
 
         response = self._session.post(
             url=f"{API_URL}/g/s/store/purchase",
-            headers=self._parse_headers(data=data), data=data
+            headers=self.parse_headers(data=data), data=data
         )
         if response.status_code != 200:
             return CheckException(loads(response.text))

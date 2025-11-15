@@ -6,6 +6,7 @@ from time import time as timestamp
 from time import timezone
 from typing import Any, BinaryIO, Dict, List, Unpack
 from uuid import UUID
+from requests import Session
 
 from json_minify import json_minify
 
@@ -113,6 +114,14 @@ class SubClient(Client):
         self.__cross_point = f"{API_URL}/g/s-x{self.__comId}"
         self.__profile = kwargs.get("profile")
         self.vc_connect = False
+    
+    @property
+    def profile(self) -> UserProfile:
+        return self.__profile
+    
+    @property
+    def session(self) -> Session:
+        return self.session
 
     def get_invite_codes(
         self, status: str = "normal", start: int = 0, size: int = 25
@@ -134,7 +143,7 @@ class SubClient(Client):
         response = self._session.get(
             url=f"{self.__cross_point}/community/invitation"
             + f"?status={status}&start={start}&size={size}",
-            headers=self._parse_headers(),
+            headers=self.parse_headers(),
             proxies=getattr(self, "_Client__proxies", None),
             verify=getattr(self, "_Client__certificate_path", None),
         )
@@ -164,7 +173,7 @@ class SubClient(Client):
 
         response = self._session.post(
             url=f"{self.__cross_point}/community/invitation",
-            headers=self._parse_headers(data=data),
+            headers=self.parse_headers(data=data),
             data=data,
             proxies=getattr(self, "_Client__proxies", None),
             verify=getattr(self, "_Client__certificate_path", None),
@@ -186,7 +195,7 @@ class SubClient(Client):
         """
         response = self._session.get(
             url=f"{API_URL}/{self.__comId}/s/influencer",
-            headers=self._parse_headers(),
+            headers=self.parse_headers(),
             proxies=getattr(self, "_Client__proxies", None),
             verify=getattr(self, "_Client__certificate_path", None),
         )
@@ -209,7 +218,7 @@ class SubClient(Client):
         """
         response = self._session.delete(
             url=f"{self.__cross_point}/community/invitation/{inviteId}",
-            headers=self._parse_headers(),
+            headers=self.parse_headers(),
             proxies=getattr(self, "_Client__proxies"),
             verify=getattr(self, "_Client__certificate_path", None),
         )
@@ -277,7 +286,7 @@ class SubClient(Client):
 
         response = self._session.post(
             url=f"{self.__endpoint}/s/blog",
-            headers=self._parse_headers(data=data),
+            headers=self.parse_headers(data=data),
             data=data,
             proxies=getattr(self, "_Client__proxies"),
             verify=getattr(self, "_Client__certificate_path", None),
@@ -339,7 +348,7 @@ class SubClient(Client):
 
         response = self._session.post(
             url=f"{self.__endpoint}/s/item",
-            headers=self._parse_headers(data=data),
+            headers=self.parse_headers(data=data),
             data=data,
             proxies=getattr(self, "_Client__proxies"),
             verify=getattr(self, "_Client__certificate_path", None),
@@ -404,7 +413,7 @@ class SubClient(Client):
 
         response = self._session.post(
             url=f"{self.__endpoint}/s/blog/{blogId}",
-            headers=self._parse_headers(data=data),
+            headers=self.parse_headers(data=data),
             data=data,
             proxies=getattr(self, "_Client__proxies"),
             verify=getattr(self, "_Client__certificate_path", None),
@@ -428,7 +437,7 @@ class SubClient(Client):
         """
         response = self._session.delete(
             url=f"{self.__endpoint}/s/blog/{blogId}",
-            headers=self._parse_headers(),
+            headers=self.parse_headers(),
             proxies=getattr(self, "_Client__proxies"),
             verify=getattr(self, "_Client__certificate_path", None),
         )
@@ -451,7 +460,7 @@ class SubClient(Client):
         """
         response = self._session.delete(
             url=f"{self.__endpoint}/s/item/{wikiId}",
-            headers=self._parse_headers(),
+            headers=self.parse_headers(),
             proxies=getattr(self, "_Client__proxies"),
             verify=getattr(self, "_Client__certificate_path", None),
         )
@@ -488,7 +497,7 @@ class SubClient(Client):
 
         response = self._session.post(
             url=f"{self.__endpoint}/s/blog",
-            headers=self._parse_headers(data=data),
+            headers=self.parse_headers(data=data),
             data=data,
             proxies=getattr(self, "_Client__proxies"),
             verify=getattr(self, "_Client__certificate_path", None),
@@ -514,7 +523,7 @@ class SubClient(Client):
 
         response = self._session.post(
             url=f"{self.__endpoint}/s/check-in",
-            headers=self._parse_headers(data=data),
+            headers=self.parse_headers(data=data),
             data=data,
             proxies=getattr(self, "_Client__proxies"),
             verify=getattr(self, "_Client__certificate_path", None),
@@ -547,7 +556,7 @@ class SubClient(Client):
 
         response = self._session.post(
             url=f"{self.__endpoint}/s/check-in/repair",
-            headers=self._parse_headers(data=data),
+            headers=self.parse_headers(data=data),
             data=data,
             proxies=getattr(self, "_Client__proxies"),
             verify=getattr(self, "_Client__certificate_path", None),
@@ -573,7 +582,7 @@ class SubClient(Client):
 
         response = self._session.post(
             url=f"{self.__endpoint}/s/check-in/lottery",
-            headers=self._parse_headers(data=data),
+            headers=self.parse_headers(data=data),
             data=data,
             proxies=getattr(self, "_Client__proxies"),
             verify=getattr(self, "_Client__certificate_path", None),
@@ -662,7 +671,7 @@ class SubClient(Client):
 
         response = self._session.post(
             url=f"{self.__endpoint}/s/user-profile/{self.profile.userId}",
-            headers=self._parse_headers(data=dumped_data),
+            headers=self.parse_headers(data=dumped_data),
             data=dumped_data,
             proxies=getattr(self, "_Client__proxies"),
             verify=getattr(self, "_Client__certificate_path", None),
@@ -683,7 +692,7 @@ class SubClient(Client):
 
         response = self._session.post(
             url=f"{self.__endpoint}/s/blog/{blogId}" + f"/poll/option/{optionId}/vote",
-            headers=self._parse_headers(data=data),
+            headers=self.parse_headers(data=data),
             data=data,
             proxies=getattr(self, "_Client__proxies"),
             verify=getattr(self, "_Client__certificate_path", None),
@@ -719,7 +728,7 @@ class SubClient(Client):
             response = self._session.post(
                 url=f"{self.__endpoint}/s/user-profile"
                 + f"/{userId}/{'g-comment' if isGuest else 'comment'}",
-                headers=self._parse_headers(data=data),
+                headers=self.parse_headers(data=data),
                 data=data,
                 proxies=getattr(self, "_Client__proxies"),
                 verify=getattr(self, "_Client__certificate_path", None),
@@ -734,7 +743,7 @@ class SubClient(Client):
             response = self._session.post(
                 url=f"{self.__endpoint}/s/blog"
                 + f"/{blogId}/{'g-comment' if isGuest else 'comment'}",
-                headers=self._parse_headers(data=data),
+                headers=self.parse_headers(data=data),
                 data=data,
                 proxies=getattr(self, "_Client__proxies"),
                 verify=getattr(self, "_Client__certificate_path", None),
@@ -749,7 +758,7 @@ class SubClient(Client):
             response = self._session.post(
                 url=f"{self.__endpoint}/s/item/{wikiId}"
                 + f"/{'g-comment' if isGuest else 'comment'}",
-                headers=self._parse_headers(data=data),
+                headers=self.parse_headers(data=data),
                 data=data,
                 proxies=getattr(self, "_Client__proxies"),
                 verify=getattr(self, "_Client__certificate_path", None),
@@ -764,7 +773,7 @@ class SubClient(Client):
             response = self._session.delete(
                 url=f"{self.__endpoint}/s/user-profile"
                 + f"/{userId}/comment/{commentId}",
-                headers=self._parse_headers(),
+                headers=self.parse_headers(),
                 proxies=getattr(self, "_Client__proxies"),
                 verify=getattr(self, "_Client__certificate_path", None),
             )
@@ -773,7 +782,7 @@ class SubClient(Client):
         elif blogId:
             response = self._session.delete(
                 url=f"{self.__endpoint}/s/blog/{blogId}/comment/{commentId}",
-                headers=self._parse_headers(),
+                headers=self.parse_headers(),
                 proxies=getattr(self, "_Client__proxies"),
                 verify=getattr(self, "_Client__certificate_path", None),
             )
@@ -782,7 +791,7 @@ class SubClient(Client):
         elif wikiId:
             response = self._session.delete(
                 url=f"{self.__endpoint}/s/item/{wikiId}/comment/{commentId}",
-                headers=self._parse_headers(),
+                headers=self.parse_headers(),
                 proxies=getattr(self, "_Client__proxies"),
                 verify=getattr(self, "_Client__certificate_path", None),
             )
@@ -815,7 +824,7 @@ class SubClient(Client):
 
                 response = self._session.post(
                     url=f"{self.__endpoint}/s/blog/{blogId}/vote?cv=1.2",
-                    headers=self._parse_headers(data=dumped_blog_data),
+                    headers=self.parse_headers(data=dumped_blog_data),
                     data=dumped_blog_data,
                     proxies=getattr(self, "_Client__proxies"),
                     verify=getattr(self, "_Client__certificate_path", None),
@@ -829,7 +838,7 @@ class SubClient(Client):
 
                 response = self._session.post(
                     url=f"{self.__endpoint}/s/feed/vote",
-                    headers=self._parse_headers(data=dumped_multiple_data),
+                    headers=self.parse_headers(data=dumped_multiple_data),
                     data=dumped_multiple_data,
                     proxies=getattr(self, "_Client__proxies"),
                     verify=getattr(self, "_Client__certificate_path", None),
@@ -843,7 +852,7 @@ class SubClient(Client):
 
             response = self._session.post(
                 url=f"{self.__endpoint}/s/item/{wikiId}/vote?cv=1.2",
-                headers=self._parse_headers(data=dumped_wiki_data),
+                headers=self.parse_headers(data=dumped_wiki_data),
                 data=dumped_wiki_data,
                 proxies=getattr(self, "_Client__proxies"),
                 verify=getattr(self, "_Client__certificate_path", None),
@@ -856,7 +865,7 @@ class SubClient(Client):
             response = self._session.delete(
                 url=f"{self.__endpoint}/s/blog/{blogId}"
                 + "/vote?eventSource=UserProfileView",
-                headers=self._parse_headers(),
+                headers=self.parse_headers(),
                 proxies=getattr(self, "_Client__proxies"),
                 verify=getattr(self, "_Client__certificate_path", None),
             )
@@ -866,7 +875,7 @@ class SubClient(Client):
             response = self._session.delete(
                 url=f"{self.__endpoint}/s/item/{wikiId}"
                 + "/vote?eventSource=PostDetailView",
-                headers=self._parse_headers(),
+                headers=self.parse_headers(),
                 proxies=getattr(self, "_Client__proxies"),
                 verify=getattr(self, "_Client__certificate_path", None),
             )
@@ -885,7 +894,7 @@ class SubClient(Client):
             response = self._session.post(
                 url=f"{self.__endpoint}/s/user-profile/"
                 + f"{userId}/comment/{commentId}/vote?cv=1.2&value=1",
-                headers=self._parse_headers(data=dumped_user_data),
+                headers=self.parse_headers(data=dumped_user_data),
                 data=dumped_user_data,
                 proxies=getattr(self, "_Client__proxies"),
                 verify=getattr(self, "_Client__certificate_path", None),
@@ -900,7 +909,7 @@ class SubClient(Client):
             response = self._session.post(
                 url=f"{self.__endpoint}/s/blog/{blogId}"
                 + f"/comment/{commentId}/vote?cv=1.2&value=1",
-                headers=self._parse_headers(data=dumped_blog_data),
+                headers=self.parse_headers(data=dumped_blog_data),
                 data=dumped_blog_data,
                 proxies=getattr(self, "_Client__proxies"),
                 verify=getattr(self, "_Client__certificate_path", None),
@@ -915,7 +924,7 @@ class SubClient(Client):
             response = self._session.post(
                 url=f"{self.__endpoint}/s/item/{wikiId}"
                 + f"/comment/{commentId}/g-vote?cv=1.2&value=1",
-                headers=self._parse_headers(data=dumped_wiki_data),
+                headers=self.parse_headers(data=dumped_wiki_data),
                 data=dumped_wiki_data,
                 proxies=getattr(self, "_Client__proxies"),
                 verify=getattr(self, "_Client__certificate_path", None),
@@ -931,7 +940,7 @@ class SubClient(Client):
                 url=f"{self.__endpoint}/s/user-profile"
                 + f"/{userId}/comment/{commentId}/"
                 + "g-vote?eventSource=UserProfileView",
-                headers=self._parse_headers(),
+                headers=self.parse_headers(),
                 proxies=getattr(self, "_Client__proxies"),
                 verify=getattr(self, "_Client__certificate_path", None),
             )
@@ -942,7 +951,7 @@ class SubClient(Client):
                 url=f"{self.__endpoint}/s/blog/"
                 + f"{blogId}/comment/{commentId}"
                 + "/g-vote?eventSource=PostDetailView",
-                headers=self._parse_headers(),
+                headers=self.parse_headers(),
                 proxies=getattr(self, "_Client__proxies"),
                 verify=getattr(self, "_Client__certificate_path", None),
             )
@@ -953,7 +962,7 @@ class SubClient(Client):
                 url=f"{self.__endpoint}/s/item/"
                 + f"{wikiId}/comment/{commentId}"
                 + "/g-vote?eventSource=PostDetailView",
-                headers=self._parse_headers(),
+                headers=self.parse_headers(),
                 proxies=getattr(self, "_Client__proxies"),
                 verify=getattr(self, "_Client__certificate_path", None),
             )
@@ -972,7 +981,7 @@ class SubClient(Client):
         response = self._session.post(
             url=f"{self.__endpoint}/s/blog/{blogId}"
             + f"/comment/{commentId}/vote?cv=1.2&value=1",
-            headers=self._parse_headers(data=data),
+            headers=self.parse_headers(data=data),
             data=data,
             proxies=getattr(self, "_Client__proxies"),
             verify=getattr(self, "_Client__certificate_path", None),
@@ -994,7 +1003,7 @@ class SubClient(Client):
         response = self._session.post(
             url=f"{self.__endpoint}/s/blog/{blogId}"
             + f"/comment/{commentId}/vote?cv=1.2&value=-1",
-            headers=self._parse_headers(data=data),
+            headers=self.parse_headers(data=data),
             data=data,
             proxies=getattr(self, "_Client__proxies"),
             verify=getattr(self, "_Client__certificate_path", None),
@@ -1009,7 +1018,7 @@ class SubClient(Client):
             url=f"{self.__endpoint}/s/blog/"
             + f"{blogId}/comment/{commentId}/"
             + "vote?eventSource=PostDetailView",
-            headers=self._parse_headers(),
+            headers=self.parse_headers(),
             proxies=getattr(self, "_Client__proxies"),
             verify=getattr(self, "_Client__certificate_path", None),
         )
@@ -1032,7 +1041,7 @@ class SubClient(Client):
 
         response = self._session.post(
             url=f"{self.__endpoint}/s/user-profile/{userId}/comment",
-            headers=self._parse_headers(data=data),
+            headers=self.parse_headers(data=data),
             data=data,
             proxies=getattr(self, "_Client__proxies"),
             verify=getattr(self, "_Client__certificate_path", None),
@@ -1063,7 +1072,7 @@ class SubClient(Client):
 
         response = self._session.post(
             url=f"{self.__endpoint}/s/community/stats/user-active-time",
-            headers=self._parse_headers(data=data),
+            headers=self.parse_headers(data=data),
             data=data,
             proxies=getattr(self, "_Client__proxies"),
             verify=getattr(self, "_Client__certificate_path", None),
@@ -1085,7 +1094,7 @@ class SubClient(Client):
         response = self._session.post(
             url=f"{self.__endpoint}/s/user-profile/"
             + f"{self._profile.userId}/online-status",
-            headers=self._parse_headers(data=data),
+            headers=self.parse_headers(data=data),
             data=data,
             proxies=getattr(self, "_Client__proxies"),
             verify=getattr(self, "_Client__certificate_path", None),
@@ -1098,7 +1107,7 @@ class SubClient(Client):
     def check_notifications(self) -> int:
         response = self._session.post(
             url=f"{self.__endpoint}/s/notification/checked",
-            headers=self._parse_headers(),
+            headers=self.parse_headers(),
             proxies=getattr(self, "_Client__proxies"),
             verify=getattr(self, "_Client__certificate_path", None),
         )
@@ -1110,7 +1119,7 @@ class SubClient(Client):
     def delete_notification(self, notificationId: str) -> int:
         response = self._session.delete(
             url=f"{self.__endpoint}/s/notification/{notificationId}",
-            headers=self._parse_headers(),
+            headers=self.parse_headers(),
             proxies=getattr(self, "_Client__proxies"),
             verify=getattr(self, "_Client__certificate_path", None),
         )
@@ -1122,7 +1131,7 @@ class SubClient(Client):
     def clear_notifications(self) -> int:
         response = self._session.delete(
             url=f"{self.__endpoint}/s/notification",
-            headers=self._parse_headers(),
+            headers=self.parse_headers(),
             proxies=getattr(self, "_Client__proxies"),
             verify=getattr(self, "_Client__certificate_path", None),
         )
@@ -1171,7 +1180,7 @@ class SubClient(Client):
         response = self._session.post(
             url=f"{self.__endpoint}/s/chat/thread",
             data=data,
-            headers=self._parse_headers(data=data),
+            headers=self.parse_headers(data=data),
             proxies=getattr(self, "_Client__proxies"),
             verify=getattr(self, "_Client__certificate_path", None),
         )
@@ -1202,7 +1211,7 @@ class SubClient(Client):
 
         response = self._session.post(
             url=f"{self.__endpoint}/s/chat/thread/{chatId}/member/invite",
-            headers=self._parse_headers(data=data),
+            headers=self.parse_headers(data=data),
             data=data,
             proxies=getattr(self, "_Client__proxies"),
             verify=getattr(self, "_Client__certificate_path", None),
@@ -1226,7 +1235,7 @@ class SubClient(Client):
         """
         response = self._session.post(
             url=f"{self.__endpoint}/s/user-group/quick-access/{userId}",
-            headers=self._parse_headers(),
+            headers=self.parse_headers(),
             proxies=getattr(self, "_Client__proxies"),
             verify=getattr(self, "_Client__certificate_path", None),
         )
@@ -1278,7 +1287,7 @@ class SubClient(Client):
 
         response = self._session.post(
             url=url,
-            headers=self._parse_headers(data=data),
+            headers=self.parse_headers(data=data),
             data=data,
             proxies=getattr(self, "_Client__proxies"),
             verify=getattr(self, "_Client__certificate_path", None),
@@ -1292,7 +1301,7 @@ class SubClient(Client):
         response = self._session.post(
             url=f"{self.__endpoint}/s/chat/"
             + f"thread/{chatId}/tipping/tipped-users/{userId}/thank",
-            headers=self._parse_headers(),
+            headers=self.parse_headers(),
             proxies=getattr(self, "_Client__proxies"),
             verify=getattr(self, "_Client__certificate_path", None),
         )
@@ -1317,7 +1326,7 @@ class SubClient(Client):
 
         response = self._session.post(
             url=f"{self.__endpoint}/s/" + f"user-profile/{self.profile.userId}/joined",
-            headers=self._parse_headers(data=data),
+            headers=self.parse_headers(data=data),
             data=data,
             proxies=getattr(self, "_Client__proxies"),
             verify=getattr(self, "_Client__certificate_path", None),
@@ -1343,7 +1352,7 @@ class SubClient(Client):
         response = self._session.delete(
             url=f"{self.__endpoint}/s/user-profile/"
             + f"{self.profile.userId}/joined/{userId}",
-            headers=self._parse_headers(),
+            headers=self.parse_headers(),
             proxies=getattr(self, "_Client__proxies"),
             verify=getattr(self, "_Client__certificate_path", None),
         )
@@ -1366,7 +1375,7 @@ class SubClient(Client):
         """
         response = self._session.post(
             url=f"{self.__endpoint}/s/block/{userId}",
-            headers=self._parse_headers(),
+            headers=self.parse_headers(),
             proxies=getattr(self, "_Client__proxies"),
             verify=getattr(self, "_Client__certificate_path", None),
         )
@@ -1389,7 +1398,7 @@ class SubClient(Client):
         """
         response = self._session.delete(
             url=f"{self.__endpoint}/s/block/{userId}",
-            headers=self._parse_headers(),
+            headers=self.parse_headers(),
             proxies=getattr(self, "_Client__proxies"),
             verify=getattr(self, "_Client__certificate_path", None),
         )
@@ -1429,7 +1438,7 @@ class SubClient(Client):
         response = self._session.post(
             url=f"{self.__endpoint}/s/{'g-flag' if asGuest else 'flag'}",
             data=data,
-            headers=self._parse_headers(data=data),
+            headers=self.parse_headers(data=data),
             proxies=getattr(self, "_Client__proxies"),
             verify=getattr(self, "_Client__certificate_path", None),
         )
@@ -1537,7 +1546,7 @@ class SubClient(Client):
 
         response = self._session.post(
             url=f"{self.__endpoint}/s/chat/thread/{chatId}/message",
-            headers=self._parse_headers(data=data),
+            headers=self.parse_headers(data=data),
             data=data,
             proxies=getattr(self, "_Client__proxies"),
             verify=getattr(self, "_Client__certificate_path", None),
@@ -1569,7 +1578,7 @@ class SubClient(Client):
         data = dumps(data)
         response = self._session.post(
             url=f"{self.__endpoint}/s/chat/thread/{chatId}/message",
-            headers=self._parse_headers(data=data),
+            headers=self.parse_headers(data=data),
             data=data,
             proxies=getattr(self, "_Client__proxies"),
             verify=getattr(self, "_Client__certificate_path", None),
@@ -1601,7 +1610,7 @@ class SubClient(Client):
             response = self._session.delete(
                 url=f"{self.__endpoint}/s/chat/thread/"
                 + f"{chatId}/message/{messageId}",
-                headers=self._parse_headers(),
+                headers=self.parse_headers(),
                 proxies=getattr(self, "_Client__proxies"),
                 verify=getattr(self, "_Client__certificate_path", None),
             )
@@ -1622,7 +1631,7 @@ class SubClient(Client):
         response = self._session.post(
             url=f"{self.__endpoint}/s/chat/thread/"
             + f"{chatId}/message/{messageId}/admin",
-            headers=self._parse_headers(data=dumped_data),
+            headers=self.parse_headers(data=dumped_data),
             data=dumped_data,
             proxies=getattr(self, "_Client__proxies"),
             verify=getattr(self, "_Client__certificate_path", None),
@@ -1649,7 +1658,7 @@ class SubClient(Client):
 
         response = self._session.post(
             url=f"{self.__endpoint}/s/chat/thread/{chatId}/mark-as-read",
-            headers=self._parse_headers(data=data),
+            headers=self.parse_headers(data=data),
             data=data,
             proxies=getattr(self, "_Client__proxies"),
             verify=getattr(self, "_Client__certificate_path", None),
@@ -1717,7 +1726,7 @@ class SubClient(Client):
                 url=f"{self.__endpoint}/s/chat/"
                 + f"thread/{chatId}/member/{self._profile.userId}/alert",
                 data=disturb_data,
-                headers=self._parse_headers(data=disturb_data),
+                headers=self.parse_headers(data=disturb_data),
                 proxies=getattr(self, "_Client__proxies"),
                 verify=getattr(self, "_Client__certificate_path", None),
             )
@@ -1728,7 +1737,7 @@ class SubClient(Client):
         if pinChat:
             response = self._session.post(
                 url=f"{self.__endpoint}/s/chat/thread/{chatId}/pin",
-                headers=self._parse_headers(),
+                headers=self.parse_headers(),
                 proxies=getattr(self, "_Client__proxies"),
                 verify=getattr(self, "_Client__certificate_path", None),
             )
@@ -1749,7 +1758,7 @@ class SubClient(Client):
                 url=f"{self.__endpoint}/s/chat/thread/{chatId}"
                 + f"/member/{self._profile.userId}/background",
                 data=background_data,
-                headers=self._parse_headers(data=background_data),
+                headers=self.parse_headers(data=background_data),
                 proxies=getattr(self, "_Client__proxies"),
                 verify=getattr(self, "_Client__certificate_path", None),
             )
@@ -1766,7 +1775,7 @@ class SubClient(Client):
             response = self._session.post(
                 url=f"{self.__endpoint}/s/chat/thread/{chatId}/co-host",
                 data=co_host_data,
-                headers=self._parse_headers(data=co_host_data),
+                headers=self.parse_headers(data=co_host_data),
                 proxies=getattr(self, "_Client__proxies"),
                 verify=getattr(self, "_Client__certificate_path", None),
             )
@@ -1780,7 +1789,7 @@ class SubClient(Client):
                 response = self._session.post(
                     url=f"{self.__endpoint}/s/chat/"
                     + f"thread/{chatId}/view-only/enable",
-                    headers=self._parse_headers(
+                    headers=self.parse_headers(
                         type="application/x-www-form-urlencoded"
                     ),
                     proxies=getattr(self, "_Client__proxies"),
@@ -1795,7 +1804,7 @@ class SubClient(Client):
             response = self._session.post(
                 url=f"{self.__endpoint}/s/chat/"
                 + f"thread/{chatId}/members-can-invite/disable",
-                headers=self._parse_headers(type="application/x-www-form-urlencoded"),
+                headers=self.parse_headers(type="application/x-www-form-urlencoded"),
                 proxies=getattr(self, "_Client__proxies"),
                 verify=getattr(self, "_Client__certificate_path", None),
             )
@@ -1808,7 +1817,7 @@ class SubClient(Client):
             response = self._session.post(
                 url=f"{self.__endpoint}/s/chat/thread/"
                 + f"{chatId}/tipping-perm-status/enable",
-                headers=self._parse_headers(type="application/x-www-form-urlencoded"),
+                headers=self.parse_headers(type="application/x-www-form-urlencoded"),
                 proxies=getattr(self, "_Client__proxies"),
                 verify=getattr(self, "_Client__certificate_path", None),
             )
@@ -1838,7 +1847,7 @@ class SubClient(Client):
 
         response = self._session.post(
             url=f"{self.__endpoint}/s/chat/thread/{chatId}",
-            headers=self._parse_headers(data=dumped_data),
+            headers=self.parse_headers(data=dumped_data),
             data=dumped_data,
             proxies=getattr(self, "_Client__proxies"),
             verify=getattr(self, "_Client__certificate_path", None),
@@ -1855,7 +1864,7 @@ class SubClient(Client):
 
         response = self._session.post(
             url=f"{self.__endpoint}/s/chat/thread/{chatId}/transfer-organizer",
-            headers=self._parse_headers(data=data),
+            headers=self.parse_headers(data=data),
             data=data,
             proxies=getattr(self, "_Client__proxies"),
             verify=getattr(self, "_Client__certificate_path", None),
@@ -1869,7 +1878,7 @@ class SubClient(Client):
         response = self._session.post(
             url=f"{self.__endpoint}/s/chat/thread/"
             + f"{chatId}/transfer-organizer/{requestId}/accept",
-            headers=self._parse_headers(type="application/x-www-form-urlencoded"),
+            headers=self.parse_headers(type="application/x-www-form-urlencoded"),
             proxies=getattr(self, "_Client__proxies"),
             verify=getattr(self, "_Client__certificate_path", None),
         )
@@ -1882,7 +1891,7 @@ class SubClient(Client):
         response = self._session.delete(
             url=f"{self.__endpoint}/s/chat/thread"
             + f"/{chatId}/member/{userId}?allowRejoin={int(allowRejoin)}",
-            headers=self._parse_headers(),
+            headers=self.parse_headers(),
             proxies=getattr(self, "_Client__proxies"),
             verify=getattr(self, "_Client__certificate_path", None),
         )
@@ -1906,7 +1915,7 @@ class SubClient(Client):
         response = self._session.post(
             url=f"{self.__endpoint}/s/chat/"
             + f"thread/{chatId}/member/{self._profile.userId}",
-            headers=self._parse_headers(type="application/x-www-form-urlencoded"),
+            headers=self.parse_headers(type="application/x-www-form-urlencoded"),
             proxies=getattr(self, "_Client__proxies"),
             verify=getattr(self, "_Client__certificate_path", None),
         )
@@ -1930,7 +1939,7 @@ class SubClient(Client):
         response = self._session.delete(
             url=f"{self.__endpoint}/s/chat/thread/"
             + f"{chatId}/member/{self.profile.userId}",
-            headers=self._parse_headers(),
+            headers=self.parse_headers(),
             proxies=getattr(self, "_Client__proxies"),
             verify=getattr(self, "_Client__certificate_path", None),
         )
@@ -1953,7 +1962,7 @@ class SubClient(Client):
         """
         response = self._session.delete(
             url=f"{self.__endpoint}/s/chat/thread/{chatId}",
-            headers=self._parse_headers(),
+            headers=self.parse_headers(),
             proxies=getattr(self, "_Client__proxies"),
             verify=getattr(self, "_Client__certificate_path", None),
         )
@@ -1975,7 +1984,7 @@ class SubClient(Client):
 
         response = self._session.post(
             url=f"{self.__endpoint}/s/influencer/{userId}/subscribe",
-            headers=self._parse_headers(data=data),
+            headers=self.parse_headers(data=data),
             data=data,
             proxies=getattr(self, "_Client__proxies"),
             verify=getattr(self, "_Client__certificate_path", None),
@@ -1988,7 +1997,7 @@ class SubClient(Client):
     def promotion(self, noticeId: str, type: str = "accept") -> int:
         response = self._session.post(
             url=f"{self.__endpoint}/s/notice/{noticeId}/{type}",
-            headers=self._parse_headers(),
+            headers=self.parse_headers(),
             proxies=getattr(self, "_Client__proxies"),
             verify=getattr(self, "_Client__certificate_path", None),
         )
@@ -2010,7 +2019,7 @@ class SubClient(Client):
 
         response = self._session.post(
             url=f"{self.__endpoint}/s/blog/{quizId}/quiz/result",
-            headers=self._parse_headers(data=data),
+            headers=self.parse_headers(data=data),
             data=data,
             proxies=getattr(self, "_Client__proxies"),
             verify=getattr(self, "_Client__certificate_path", None),
@@ -2046,7 +2055,7 @@ class SubClient(Client):
 
         response = self._session.post(
             url=f"{self.__endpoint}/s/blog/{quizId}/quiz/result",
-            headers=self._parse_headers(data=data),
+            headers=self.parse_headers(data=data),
             data=data,
             proxies=getattr(self, "_Client__proxies"),
             verify=getattr(self, "_Client__certificate_path", None),
@@ -2068,7 +2077,7 @@ class SubClient(Client):
 
         response = self._session.post(
             url=f"{self.__endpoint}/s/chat/thread/{chatId}/vvchat-permission",
-            headers=self._parse_headers(data=data),
+            headers=self.parse_headers(data=data),
             data=data,
             proxies=getattr(self, "_Client__proxies"),
             verify=getattr(self, "_Client__certificate_path", None),
@@ -2081,7 +2090,7 @@ class SubClient(Client):
     def get_vc_reputation_info(self, chatId: str) -> VcReputation:
         response = self._session.get(
             url=f"{self.__endpoint}/s/chat/thread/{chatId}/avchat-reputation",
-            headers=self._parse_headers(),
+            headers=self.parse_headers(),
             proxies=getattr(self, "_Client__proxies"),
             verify=getattr(self, "_Client__certificate_path", None),
         )
@@ -2093,7 +2102,7 @@ class SubClient(Client):
     def claim_vc_reputation(self, chatId: str) -> VcReputation:
         response = self._session.post(
             url=f"{self.__endpoint}/s/chat/thread/{chatId}/avchat-reputation",
-            headers=self._parse_headers(),
+            headers=self.parse_headers(),
             proxies=getattr(self, "_Client__proxies"),
             verify=getattr(self, "_Client__certificate_path", None),
         )
@@ -2108,7 +2117,7 @@ class SubClient(Client):
         response = self._session.get(
             url=f"{self.__endpoint}/s/user-profile"
             + f"?type={type}&start={start}&size={size}",
-            headers=self._parse_headers(),
+            headers=self.parse_headers(),
             proxies=getattr(self, "_Client__proxies"),
             verify=getattr(self, "_Client__certificate_path", None),
         )
@@ -2123,7 +2132,7 @@ class SubClient(Client):
             url=f"{self.__endpoint}/s/live-layer?"
             + f"topic=ndtopic:x{self.__comId}:"
             + f"online-members&start={start}&size={size}",
-            headers=self._parse_headers(),
+            headers=self.parse_headers(),
             proxies=getattr(self, "_Client__proxies"),
             verify=getattr(self, "_Client__certificate_path", None),
         )
@@ -2138,7 +2147,7 @@ class SubClient(Client):
         response = self._session.get(
             url=f"{self.__endpoint}/s/user-group/"
             + f"quick-access?type=online&start={start}&size={size}",
-            headers=self._parse_headers(),
+            headers=self.parse_headers(),
             proxies=getattr(self, "_Client__proxies"),
             verify=getattr(self, "_Client__certificate_path", None),
         )
@@ -2162,7 +2171,7 @@ class SubClient(Client):
         """
         response = self._session.get(
             url=f"{self.__endpoint}/s/user-profile/{userId}",
-            headers=self._parse_headers(),
+            headers=self.parse_headers(),
             proxies=getattr(self, "_Client__proxies"),
             verify=getattr(self, "_Client__certificate_path", None),
         )
@@ -2191,7 +2200,7 @@ class SubClient(Client):
         response = self._session.get(
             url=f"{self.__endpoint}/s/user-profile/"
             + f"{userId}/joined?start={start}&size={size}",
-            headers=self._parse_headers(),
+            headers=self.parse_headers(),
             proxies=getattr(self, "_Client__proxies"),
             verify=getattr(self, "_Client__certificate_path", None),
         )
@@ -2220,7 +2229,7 @@ class SubClient(Client):
         response = self._session.get(
             url=f"{self.__endpoint}/s/user-profile/"
             + f"{userId}/member?start={start}&size={size}",
-            headers=self._parse_headers(),
+            headers=self.parse_headers(),
             proxies=getattr(self, "_Client__proxies"),
             verify=getattr(self, "_Client__certificate_path", None),
         )
@@ -2233,7 +2242,7 @@ class SubClient(Client):
         response = self._session.get(
             url=f"{self.__endpoint}/s/check-in/stats/{userId}"
             + f"?timezone={-timezone // 1000}",
-            headers=self._parse_headers(),
+            headers=self.parse_headers(),
             proxies=getattr(self, "_Client__proxies"),
             verify=getattr(self, "_Client__certificate_path", None),
         )
@@ -2246,7 +2255,7 @@ class SubClient(Client):
         response = self._session.get(
             url=f"{self.__endpoint}/s/blog?"
             + f"type=user&q={userId}&start={start}&size={size}",
-            headers=self._parse_headers(),
+            headers=self.parse_headers(),
             proxies=getattr(self, "_Client__proxies"),
             verify=getattr(self, "_Client__certificate_path", None),
         )
@@ -2259,7 +2268,7 @@ class SubClient(Client):
         response = self._session.get(
             url=f"{self.__endpoint}/s/item?type=user-all"
             + f"&start={start}&size={size}&cv=1.2&uid={userId}",
-            headers=self._parse_headers(),
+            headers=self.parse_headers(),
             proxies=getattr(self, "_Client__proxies"),
             verify=getattr(self, "_Client__certificate_path", None),
         )
@@ -2271,7 +2280,7 @@ class SubClient(Client):
     def get_user_achievements(self, userId: str) -> UserAchievements:
         response = self._session.get(
             url=f"{self.__endpoint}/s/user-profile/{userId}/achievements",
-            headers=self._parse_headers(),
+            headers=self.parse_headers(),
             proxies=getattr(self, "_Client__proxies", None),
             verify=getattr(self, "_Client__certificate_path", None),
         )
@@ -2286,7 +2295,7 @@ class SubClient(Client):
         response = self._session.get(
             url=f"{self.__endpoint}/s/influencer/"
             + f"{userId}/fans?start={start}&size={size}",
-            headers=self._parse_headers(),
+            headers=self.parse_headers(),
             proxies=getattr(self, "_Client__proxies", None),
             verify=getattr(self, "_Client__certificate_path", None),
         )
@@ -2311,7 +2320,7 @@ class SubClient(Client):
         """
         response = self._session.get(
             url=f"{self.__endpoint}/s/block?start={start}&size={size}",
-            headers=self._parse_headers(),
+            headers=self.parse_headers(),
             proxies=getattr(self, "_Client__proxies", None),
             verify=getattr(self, "_Client__certificate_path", None),
         )
@@ -2336,7 +2345,7 @@ class SubClient(Client):
 
         response = self._session.get(
             url=f"{self.__endpoint}/s/block/" + f"full-list?start={start}&size={size}",
-            headers=self._parse_headers(),
+            headers=self.parse_headers(),
             proxies=getattr(self, "_Client__proxies", None),
             verify=getattr(self, "_Client__certificate_path", None),
         )
@@ -2351,7 +2360,7 @@ class SubClient(Client):
         response = self._session.get(
             url=f"{self.__endpoint}/s/user-profile?"
             + f"type=name&q={nickname}&start={start}&size={size}",
-            headers=self._parse_headers(),
+            headers=self.parse_headers(),
             proxies=getattr(self, "_Client__proxies", None),
             verify=getattr(self, "_Client__certificate_path", None),
         )
@@ -2363,7 +2372,7 @@ class SubClient(Client):
     def get_saved_blogs(self, start: int = 0, size: int = 25) -> UserSavedBlogs:
         response = self._session.get(
             url=f"{self.__endpoint}/s/bookmark?start={start}&size={size}",
-            headers=self._parse_headers(),
+            headers=self.parse_headers(),
             proxies=getattr(self, "_Client__proxies", None),
             verify=getattr(self, "_Client__certificate_path", None),
         )
@@ -2379,7 +2388,7 @@ class SubClient(Client):
             response = self._session.get(
                 url=f"{self.__cross_point}/community/leaderboard"
                 + f"?rankingType=1&start={start}&size={size}",
-                headers=self._parse_headers(),
+                headers=self.parse_headers(),
                 proxies=getattr(self, "_Client__proxies", None),
                 verify=getattr(self, "_Client__certificate_path", None),
             )
@@ -2387,7 +2396,7 @@ class SubClient(Client):
             response = self._session.get(
                 url=f"{self.__cross_point}/community/leaderboard"
                 + f"?rankingType=2&start={start}&size={size}",
-                headers=self._parse_headers(),
+                headers=self.parse_headers(),
                 proxies=getattr(self, "_Client__proxies", None),
                 verify=getattr(self, "_Client__certificate_path", None),
             )
@@ -2395,14 +2404,14 @@ class SubClient(Client):
             response = self._session.get(
                 url=f"{self.__cross_point}/community/leaderboard"
                 + f"?rankingType=3&start={start}&size={size}",
-                headers=self._parse_headers(),
+                headers=self.parse_headers(),
                 proxies=getattr(self, "_Client__proxies", None),
                 verify=getattr(self, "_Client__certificate_path", None),
             )
         elif LeaderboardType.CHECK == type:
             response = self._session.get(
                 url=f"{self.__cross_point}/community/leaderboard" + "?rankingType=4",
-                headers=self._parse_headers(),
+                headers=self.parse_headers(),
                 proxies=getattr(self, "_Client__proxies", None),
                 verify=getattr(self, "_Client__certificate_path", None),
             )
@@ -2410,7 +2419,7 @@ class SubClient(Client):
             response = self._session.get(
                 url=f"{self.__cross_point}/community/leaderboard"
                 + f"?rankingType=5&start={start}&size={size}",
-                headers=self._parse_headers(),
+                headers=self.parse_headers(),
                 proxies=getattr(self, "_Client__proxies", None),
                 verify=getattr(self, "_Client__certificate_path", None),
             )
@@ -2422,7 +2431,7 @@ class SubClient(Client):
     def get_wiki_info(self, wikiId: str) -> GetWikiInfo:
         response = self._session.get(
             url=f"{self.__endpoint}/s/item/{wikiId}",
-            headers=self._parse_headers(),
+            headers=self.parse_headers(),
             proxies=getattr(self, "_Client__proxies", None),
             verify=getattr(self, "_Client__certificate_path", None),
         )
@@ -2435,7 +2444,7 @@ class SubClient(Client):
         response = self._session.get(
             url=f"{self.__endpoint}/s/item?type="
             + f"catalog-all&start={start}&size={size}",
-            headers=self._parse_headers(),
+            headers=self.parse_headers(),
             proxies=getattr(self, "_Client__proxies", None),
             verify=getattr(self, "_Client__certificate_path", None),
         )
@@ -2447,7 +2456,7 @@ class SubClient(Client):
     def get_wiki_categories(self, start: int = 0, size: int = 25) -> WikiCategoryList:
         response = self._session.get(
             url=f"{self.__endpoint}/s/item-category?start={start}&size={size}",
-            headers=self._parse_headers(),
+            headers=self.parse_headers(),
             proxies=getattr(self, "_Client__proxies", None),
             verify=getattr(self, "_Client__certificate_path", None),
         )
@@ -2464,7 +2473,7 @@ class SubClient(Client):
         response = self._session.get(
             url=f"{self.__endpoint}/s/item-category"
             + f"/{categoryId}?start={start}&size={size}s",
-            headers=self._parse_headers(),
+            headers=self.parse_headers(),
             proxies=getattr(self, "_Client__proxies", None),
             verify=getattr(self, "_Client__certificate_path", None),
         )
@@ -2490,7 +2499,7 @@ class SubClient(Client):
             response = self._session.get(
                 url=f"{self.__endpoint}/s/blog/{blogId}/tipping/"
                 + f"tipped-users-summary?start={start}&size={size}",
-                headers=self._parse_headers(),
+                headers=self.parse_headers(),
                 proxies=getattr(self, "_Client__proxies", None),
                 verify=getattr(self, "_Client__certificate_path", None),
             )
@@ -2498,7 +2507,7 @@ class SubClient(Client):
             response = self._session.get(
                 url=f"{self.__endpoint}/s/item/{wikiId}/tipping/"
                 + f"tipped-users-summary?start={start}&size={size}",
-                headers=self._parse_headers(),
+                headers=self.parse_headers(),
                 proxies=getattr(self, "_Client__proxies", None),
                 verify=getattr(self, "_Client__certificate_path", None),
             )
@@ -2506,7 +2515,7 @@ class SubClient(Client):
             response = self._session.get(
                 url=f"{self.__endpoint}/s/chat/thread/{chatId}/"
                 + f"tipping/tipped-users-summary?start={start}&size={size}",
-                headers=self._parse_headers(),
+                headers=self.parse_headers(),
                 proxies=getattr(self, "_Client__proxies", None),
                 verify=getattr(self, "_Client__certificate_path", None),
             )
@@ -2535,7 +2544,7 @@ class SubClient(Client):
         response = self._session.get(
             url=f"{self.__endpoint}/s/chat/thread?type=joined-me"
             + f"&start={start}&size={size}",
-            headers=self._parse_headers(),
+            headers=self.parse_headers(),
             proxies=getattr(self, "_Client__proxies", None),
             verify=getattr(self, "_Client__certificate_path", None),
         )
@@ -2563,7 +2572,7 @@ class SubClient(Client):
         response = self._session.get(
             url=f"{self.__endpoint}/s/chat/thread?type=public-"
             + f"all&filterType={type}&start={start}&size={size}",
-            headers=self._parse_headers(),
+            headers=self.parse_headers(),
             proxies=getattr(self, "_Client__proxies", None),
             verify=getattr(self, "_Client__certificate_path", None),
         )
@@ -2586,7 +2595,7 @@ class SubClient(Client):
         """
         response = self._session.get(
             url=f"{self.__endpoint}/s/chat/thread/{chatId}",
-            headers=self._parse_headers(),
+            headers=self.parse_headers(),
             proxies=getattr(self, "_Client__proxies", None),
             verify=getattr(self, "_Client__certificate_path", None),
         )
@@ -2626,7 +2635,7 @@ class SubClient(Client):
 
         response = self._session.get(
             url,
-            headers=self._parse_headers(),
+            headers=self.parse_headers(),
             proxies=getattr(self, "_Client__proxies", None),
             verify=getattr(self, "_Client__certificate_path", None),
         )
@@ -2651,7 +2660,7 @@ class SubClient(Client):
         """
         response = self._session.get(
             url=f"{self.__endpoint}/s/chat/thread/{chatId}" + f"/message/{messageId}",
-            headers=self._parse_headers(),
+            headers=self.parse_headers(),
             proxies=getattr(self, "_Client__proxies", None),
             verify=getattr(self, "_Client__certificate_path", None),
         )
@@ -2672,7 +2681,7 @@ class SubClient(Client):
                 blogId = quizId
             response = self._session.get(
                 url=f"{self.__endpoint}/s/blog/{blogId}",
-                headers=self._parse_headers(),
+                headers=self.parse_headers(),
                 proxies=getattr(self, "_Client__proxies", None),
                 verify=getattr(self, "_Client__certificate_path", None),
             )
@@ -2683,7 +2692,7 @@ class SubClient(Client):
         elif wikiId:
             response = self._session.get(
                 url=f"{self.__endpoint}/s/item/{wikiId}",
-                headers=self._parse_headers(),
+                headers=self.parse_headers(),
                 proxies=getattr(self, "_Client__proxies", None),
                 verify=getattr(self, "_Client__certificate_path", None),
             )
@@ -2694,7 +2703,7 @@ class SubClient(Client):
         elif fileId:
             response = self._session.get(
                 url=f"{self.__endpoint}/s/shared-folder/files/{fileId}",
-                headers=self._parse_headers(),
+                headers=self.parse_headers(),
                 proxies=getattr(self, "_Client__proxies", None),
                 verify=getattr(self, "_Client__certificate_path", None),
             )
@@ -2724,7 +2733,7 @@ class SubClient(Client):
             response = self._session.get(
                 url=f"{self.__endpoint}/s/blog/{blogId}/comment?"
                 + f"sort={sorting_type}&start={start}&size={size}",
-                headers=self._parse_headers(),
+                headers=self.parse_headers(),
                 proxies=getattr(self, "_Client__proxies", None),
                 verify=getattr(self, "_Client__certificate_path", None),
             )
@@ -2732,7 +2741,7 @@ class SubClient(Client):
             response = self._session.get(
                 url=f"{self.__endpoint}/s/item/{wikiId}/comment?"
                 + f"sort={sorting_type}&start={start}&size={size}",
-                headers=self._parse_headers(),
+                headers=self.parse_headers(),
                 proxies=getattr(self, "_Client__proxies", None),
                 verify=getattr(self, "_Client__certificate_path", None),
             )
@@ -2740,7 +2749,7 @@ class SubClient(Client):
             response = self._session.get(
                 url=f"{self.__endpoint}/s/shared-folder/files/{fileId}"
                 + f"/comment?sort={sorting_type}&start={start}&size={size}",
-                headers=self._parse_headers(),
+                headers=self.parse_headers(),
                 proxies=getattr(self, "_Client__proxies", None),
                 verify=getattr(self, "_Client__certificate_path", None),
             )
@@ -2755,7 +2764,7 @@ class SubClient(Client):
     def get_blog_categories(self, size: int = 25) -> BlogCategoryList:
         response = self._session.get(
             url=f"{self.__endpoint}/s/blog-category?size={size}",
-            headers=self._parse_headers(),
+            headers=self.parse_headers(),
             proxies=getattr(self, "_Client__proxies", None),
             verify=getattr(self, "_Client__certificate_path", None),
         )
@@ -2772,7 +2781,7 @@ class SubClient(Client):
         response = self._session.get(
             url=f"{self.__endpoint}/s/blog-category/{categoryId}"
             + f"/blog-list?start={start}&size={size}",
-            headers=self._parse_headers(),
+            headers=self.parse_headers(),
             proxies=getattr(self, "_Client__proxies", None),
             verify=getattr(self, "_Client__certificate_path", None),
         )
@@ -2787,7 +2796,7 @@ class SubClient(Client):
         response = self._session.get(
             url=f"{self.__endpoint}/s/blog/{quizId}"
             + f"/quiz/result?start={start}&size={size}",
-            headers=self._parse_headers(),
+            headers=self.parse_headers(),
             proxies=getattr(self, "_Client__proxies", None),
             verify=getattr(self, "_Client__certificate_path", None),
         )
@@ -2822,7 +2831,7 @@ class SubClient(Client):
         response = self._session.get(
             url=f"{self.__endpoint}/s/user-profile/{userId}"
             + f"/comment?sort={sorting}&start={start}&size={size}",
-            headers=self._parse_headers(),
+            headers=self.parse_headers(),
             proxies=getattr(self, "_Client__proxies", None),
             verify=getattr(self, "_Client__certificate_path", None),
         )
@@ -2847,7 +2856,7 @@ class SubClient(Client):
 
         response = self._session.get(
             url,
-            headers=self._parse_headers(),
+            headers=self.parse_headers(),
             proxies=getattr(self, "_Client__proxies", None),
             verify=getattr(self, "_Client__certificate_path", None),
         )
@@ -2862,7 +2871,7 @@ class SubClient(Client):
         response = self._session.get(
             url=f"{self.__endpoint}/s/chat/thread/{chatId}/member"
             + f"?start={start}&size={size}&type=default&cv=1.2",
-            headers=self._parse_headers(),
+            headers=self.parse_headers(),
             proxies=getattr(self, "_Client__proxies", None),
             verify=getattr(self, "_Client__certificate_path", None),
         )
@@ -2875,7 +2884,7 @@ class SubClient(Client):
         response = self._session.get(
             url=f"{self.__endpoint}/s/notification?"
             + f"pagingType=t&start={start}&size={size}",
-            headers=self._parse_headers(),
+            headers=self.parse_headers(),
             proxies=getattr(self, "_Client__proxies", None),
             verify=getattr(self, "_Client__certificate_path", None),
         )
@@ -2895,7 +2904,7 @@ class SubClient(Client):
         response = self._session.get(
             url=f"{self.__endpoint}/s/notice?type=usersV2"
             + f"&status=1&start={start}&size={size}",
-            headers=self._parse_headers(),
+            headers=self.parse_headers(),
             proxies=getattr(self, "_Client__proxies", None),
             verify=getattr(self, "_Client__certificate_path", None),
         )
@@ -2908,7 +2917,7 @@ class SubClient(Client):
         response = self._session.get(
             url=f"{self.__endpoint}/s/sticker-collection"
             + f"/{sticker_pack_id}?includeStickers=true",
-            headers=self._parse_headers(),
+            headers=self.parse_headers(),
             proxies=getattr(self, "_Client__proxies", None),
             verify=getattr(self, "_Client__certificate_path", None),
         )
@@ -2923,7 +2932,7 @@ class SubClient(Client):
         response = self._session.get(
             url=f"{self.__endpoint}/s/sticker-collection?includeStickers"
             + "=false&type=my-active-collection",
-            headers=self._parse_headers(),
+            headers=self.parse_headers(),
             proxies=getattr(self, "_Client__proxies", None),
             verify=getattr(self, "_Client__certificate_path", None),
         )
@@ -2937,7 +2946,7 @@ class SubClient(Client):
     def get_community_stickers(self) -> CommunityStickerCollection:
         response = self._session.get(
             url=f"{self.__endpoint}/s/sticker-collection?" + "type=community-shared",
-            headers=self._parse_headers(),
+            headers=self.parse_headers(),
             proxies=getattr(self, "_Client__proxies", None),
             verify=getattr(self, "_Client__certificate_path", None),
         )
@@ -2952,7 +2961,7 @@ class SubClient(Client):
         response = self._session.get(
             url=f"{self.__endpoint}/s/sticker-collection"
             + f"/{collectionId}?includeStickers=true",
-            headers=self._parse_headers(),
+            headers=self.parse_headers(),
             proxies=getattr(self, "_Client__proxies", None),
             verify=getattr(self, "_Client__certificate_path", None),
         )
@@ -2966,7 +2975,7 @@ class SubClient(Client):
     def get_shared_folder_info(self) -> GetSharedFolderInfo:
         response = self._session.get(
             url=f"{self.__endpoint}/s/shared-folder/stats",
-            headers=self._parse_headers(),
+            headers=self.parse_headers(),
             proxies=getattr(self, "_Client__proxies", None),
             verify=getattr(self, "_Client__certificate_path", None),
         )
@@ -2981,7 +2990,7 @@ class SubClient(Client):
         response = self._session.get(
             url=f"{self.__endpoint}/s/shared-folder/files?"
             + f"type={type}&start={start}&size={size}",
-            headers=self._parse_headers(),
+            headers=self.parse_headers(),
             proxies=getattr(self, "_Client__proxies", None),
             verify=getattr(self, "_Client__certificate_path", None),
         )
@@ -3005,7 +3014,7 @@ class SubClient(Client):
             response = self._session.get(
                 url=f"{self.__endpoint}/s/admin/operation?objectId={userId}"
                 + f"&objectType=0&pagingType=t&size={size}",
-                headers=self._parse_headers(),
+                headers=self.parse_headers(),
                 proxies=getattr(self, "_Client__proxies", None),
                 verify=getattr(self, "_Client__certificate_path", None),
             )
@@ -3013,7 +3022,7 @@ class SubClient(Client):
             response = self._session.get(
                 url=f"{self.__endpoint}/s/admin/operation?objectId={blogId}"
                 + f"&objectType=1&pagingType=t&size={size}",
-                headers=self._parse_headers(),
+                headers=self.parse_headers(),
                 proxies=getattr(self, "_Client__proxies", None),
                 verify=getattr(self, "_Client__certificate_path", None),
             )
@@ -3021,7 +3030,7 @@ class SubClient(Client):
             response = self._session.get(
                 url=f"{self.__endpoint}/s/admin/operation?objectId={quizId}"
                 + f"&objectType=1&pagingType=t&size={size}",
-                headers=self._parse_headers(),
+                headers=self.parse_headers(),
                 proxies=getattr(self, "_Client__proxies", None),
                 verify=getattr(self, "_Client__certificate_path", None),
             )
@@ -3029,7 +3038,7 @@ class SubClient(Client):
             response = self._session.get(
                 url=f"{self.__endpoint}/s/admin/operation?objectId={wikiId}"
                 + f"&objectType=2&pagingType=t&size={size}",
-                headers=self._parse_headers(),
+                headers=self.parse_headers(),
                 proxies=getattr(self, "_Client__proxies", None),
                 verify=getattr(self, "_Client__certificate_path", None),
             )
@@ -3037,7 +3046,7 @@ class SubClient(Client):
             response = self._session.get(
                 url=f"{self.__endpoint}/s/admin/operation?objectId={fileId}"
                 + f"&objectType=109&pagingType=t&size={size}",
-                headers=self._parse_headers(),
+                headers=self.parse_headers(),
                 proxies=getattr(self, "_Client__proxies", None),
                 verify=getattr(self, "_Client__certificate_path", None),
             )
@@ -3045,7 +3054,7 @@ class SubClient(Client):
             response = self._session.get(
                 url=f"{self.__endpoint}/s/admin/operation?"
                 + f"pagingType=t&size={size}",
-                headers=self._parse_headers(),
+                headers=self.parse_headers(),
                 proxies=getattr(self, "_Client__proxies", None),
                 verify=getattr(self, "_Client__certificate_path", None),
             )
@@ -3079,7 +3088,7 @@ class SubClient(Client):
             data = dumps(data)
             response = self._session.post(
                 url=f"{self.__endpoint}/s/user-profile/{userId}/admin",
-                headers=self._parse_headers(data=data),
+                headers=self.parse_headers(data=data),
                 data=data,
                 proxies=getattr(self, "_Client__proxies", None),
                 verify=getattr(self, "_Client__certificate_path", None),
@@ -3090,7 +3099,7 @@ class SubClient(Client):
             data = dumps(data)
             response = self._session.post(
                 url=f"{self.__endpoint}/s/blog/{blogId}/admin",
-                headers=self._parse_headers(data=data),
+                headers=self.parse_headers(data=data),
                 data=data,
                 proxies=getattr(self, "_Client__proxies", None),
                 verify=getattr(self, "_Client__certificate_path", None),
@@ -3101,7 +3110,7 @@ class SubClient(Client):
             data = dumps(data)
             response = self._session.post(
                 url=f"{self.__endpoint}/s/item/{wikiId}/admin",
-                headers=self._parse_headers(data=data),
+                headers=self.parse_headers(data=data),
                 data=data,
                 proxies=getattr(self, "_Client__proxies", None),
                 verify=getattr(self, "_Client__certificate_path", None),
@@ -3112,7 +3121,7 @@ class SubClient(Client):
             data = dumps(data)
             response = self._session.post(
                 url=f"{self.__endpoint}/s/chat/thread/{chatId}/admin",
-                headers=self._parse_headers(data=data),
+                headers=self.parse_headers(data=data),
                 data=data,
                 proxies=getattr(self, "_Client__proxies", None),
                 verify=getattr(self, "_Client__certificate_path", None),
@@ -3142,7 +3151,7 @@ class SubClient(Client):
         if userId:
             response = self._session.post(
                 url=f"{self.__endpoint}/s/user-profile/{userId}/admin",
-                headers=self._parse_headers(data=data),
+                headers=self.parse_headers(data=data),
                 data=data,
                 proxies=getattr(self, "_Client__proxies", None),
                 verify=getattr(self, "_Client__certificate_path", None),
@@ -3151,7 +3160,7 @@ class SubClient(Client):
         elif blogId:
             response = self._session.post(
                 url=f"{self.__endpoint}/s/blog/{blogId}/admin",
-                headers=self._parse_headers(data=data),
+                headers=self.parse_headers(data=data),
                 data=data,
                 proxies=getattr(self, "_Client__proxies", None),
                 verify=getattr(self, "_Client__certificate_path", None),
@@ -3160,7 +3169,7 @@ class SubClient(Client):
         elif wikiId:
             response = self._session.post(
                 url=f"{self.__endpoint}/s/item/{wikiId}/admin",
-                headers=self._parse_headers(data=data),
+                headers=self.parse_headers(data=data),
                 data=data,
                 proxies=getattr(self, "_Client__proxies", None),
                 verify=getattr(self, "_Client__certificate_path", None),
@@ -3169,7 +3178,7 @@ class SubClient(Client):
         elif chatId:
             response = self._session.post(
                 url=f"{self.__endpoint}/s/chat/thread/{chatId}/admin",
-                headers=self._parse_headers(data=data),
+                headers=self.parse_headers(data=data),
                 data=data,
                 proxies=getattr(self, "_Client__proxies", None),
                 verify=getattr(self, "_Client__certificate_path", None),
@@ -3202,7 +3211,7 @@ class SubClient(Client):
             data = dumps(data)
             response = self._session.post(
                 url=f"{self.__endpoint}/s/user-profile/{userId}/admin",
-                headers=self._parse_headers(data=data),
+                headers=self.parse_headers(data=data),
                 data=data,
                 proxies=getattr(self, "_Client__proxies", None),
                 verify=getattr(self, "_Client__certificate_path", None),
@@ -3214,7 +3223,7 @@ class SubClient(Client):
             data = dumps(data)
             response = self._session.post(
                 url=f"{self.__endpoint}/s/blog/{blogId}/admin",
-                headers=self._parse_headers(data=data),
+                headers=self.parse_headers(data=data),
                 data=data,
                 proxies=getattr(self, "_Client__proxies", None),
                 verify=getattr(self, "_Client__certificate_path", None),
@@ -3226,7 +3235,7 @@ class SubClient(Client):
             data = dumps(data)
             response = self._session.post(
                 url=f"{self.__endpoint}/s/blog/{quizId}/admin",
-                headers=self._parse_headers(data=data),
+                headers=self.parse_headers(data=data),
                 data=data,
                 proxies=getattr(self, "_Client__proxies", None),
                 verify=getattr(self, "_Client__certificate_path", None),
@@ -3238,7 +3247,7 @@ class SubClient(Client):
             data = dumps(data)
             response = self._session.post(
                 url=f"{self.__endpoint}/s/item/{wikiId}/admin",
-                headers=self._parse_headers(data=data),
+                headers=self.parse_headers(data=data),
                 data=data,
                 proxies=getattr(self, "_Client__proxies", None),
                 verify=getattr(self, "_Client__certificate_path", None),
@@ -3250,7 +3259,7 @@ class SubClient(Client):
             data = dumps(data)
             response = self._session.post(
                 url=f"{self.__endpoint}/s/chat/thread/{chatId}/admin",
-                headers=self._parse_headers(data=data),
+                headers=self.parse_headers(data=data),
                 data=data,
                 proxies=getattr(self, "_Client__proxies", None),
                 verify=getattr(self, "_Client__certificate_path", None),
@@ -3262,7 +3271,7 @@ class SubClient(Client):
             data = dumps(data)
             response = self._session.post(
                 url=f"{self.__endpoint}/s/shared-folder/files/{fileId}/admin",
-                headers=self._parse_headers(data=data),
+                headers=self.parse_headers(data=data),
                 data=data,
                 proxies=getattr(self, "_Client__proxies", None),
                 verify=getattr(self, "_Client__certificate_path", None),
@@ -3295,7 +3304,7 @@ class SubClient(Client):
             data = dumps(data)
             response = self._session.post(
                 url=f"{self.__endpoint}/s/user-profile/{userId}/admin",
-                headers=self._parse_headers(data=data),
+                headers=self.parse_headers(data=data),
                 data=data,
                 proxies=getattr(self, "_Client__proxies", None),
                 verify=getattr(self, "_Client__certificate_path", None),
@@ -3307,7 +3316,7 @@ class SubClient(Client):
             data = dumps(data)
             response = self._session.post(
                 url=f"{self.__endpoint}/s/blog/{blogId}/admin",
-                headers=self._parse_headers(data=data),
+                headers=self.parse_headers(data=data),
                 data=data,
                 proxies=getattr(self, "_Client__proxies", None),
                 verify=getattr(self, "_Client__certificate_path", None),
@@ -3319,7 +3328,7 @@ class SubClient(Client):
             data = dumps(data)
             response = self._session.post(
                 url=f"{self.__endpoint}/s/blog/{quizId}/admin",
-                headers=self._parse_headers(data=data),
+                headers=self.parse_headers(data=data),
                 data=data,
                 proxies=getattr(self, "_Client__proxies", None),
                 verify=getattr(self, "_Client__certificate_path", None),
@@ -3331,7 +3340,7 @@ class SubClient(Client):
             data = dumps(data)
             response = self._session.post(
                 url=f"{self.__endpoint}/s/item/{wikiId}/admin",
-                headers=self._parse_headers(data=data),
+                headers=self.parse_headers(data=data),
                 data=data,
                 proxies=getattr(self, "_Client__proxies", None),
                 verify=getattr(self, "_Client__certificate_path", None),
@@ -3343,7 +3352,7 @@ class SubClient(Client):
             data = dumps(data)
             response = self._session.post(
                 url=f"{self.__endpoint}/s/chat/thread/{chatId}/admin",
-                headers=self._parse_headers(data=data),
+                headers=self.parse_headers(data=data),
                 data=data,
                 proxies=getattr(self, "_Client__proxies", None),
                 verify=getattr(self, "_Client__certificate_path", None),
@@ -3355,7 +3364,7 @@ class SubClient(Client):
             data = dumps(data)
             response = self._session.post(
                 url=f"{self.__endpoint}/s/shared-folder/files/{fileId}/admin",
-                headers=self._parse_headers(data=data),
+                headers=self.parse_headers(data=data),
                 data=data,
                 proxies=getattr(self, "_Client__proxies", None),
                 verify=getattr(self, "_Client__certificate_path", None),
@@ -3386,7 +3395,7 @@ class SubClient(Client):
 
         response = self._session.post(
             url=f"{self.__endpoint}/s/user-profile/{userId}/admin",
-            headers=self._parse_headers(data=data),
+            headers=self.parse_headers(data=data),
             data=data,
             proxies=getattr(self, "_Client__proxies", None),
             verify=getattr(self, "_Client__certificate_path", None),
@@ -3412,7 +3421,7 @@ class SubClient(Client):
 
         response = self._session.post(
             url=f"{self.__endpoint}/s/notice",
-            headers=self._parse_headers(data=data),
+            headers=self.parse_headers(data=data),
             data=data,
             proxies=getattr(self, "_Client__proxies", None),
             verify=getattr(self, "_Client__certificate_path", None),
@@ -3441,7 +3450,7 @@ class SubClient(Client):
 
         response = self._session.post(
             url=f"{self.__endpoint}/s/notice",
-            headers=self._parse_headers(data=data),
+            headers=self.parse_headers(data=data),
             data=data,
             proxies=getattr(self, "_Client__proxies", None),
             verify=getattr(self, "_Client__certificate_path", None),
@@ -3462,7 +3471,7 @@ class SubClient(Client):
 
         response = self._session.post(
             url=f"{self.__endpoint}/s/user-profile/{userId}/ban",
-            headers=self._parse_headers(data=data),
+            headers=self.parse_headers(data=data),
             data=data,
             proxies=getattr(self, "_Client__proxies", None),
             verify=getattr(self, "_Client__certificate_path", None),
@@ -3479,7 +3488,7 @@ class SubClient(Client):
 
         response = self._session.post(
             url=f"{self.__endpoint}/s/user-profile/{userId}/unban",
-            headers=self._parse_headers(data=data),
+            headers=self.parse_headers(data=data),
             data=data,
             proxies=getattr(self, "_Client__proxies", None),
             verify=getattr(self, "_Client__certificate_path", None),
@@ -3494,7 +3503,7 @@ class SubClient(Client):
 
         response = self._session.post(
             url=f"{self.__endpoint}/s/user-profile/featured/reorder",
-            headers=self._parse_headers(data=data),
+            headers=self.parse_headers(data=data),
             data=data,
             proxies=getattr(self, "_Client__proxies", None),
             verify=getattr(self, "_Client__certificate_path", None),
@@ -3508,7 +3517,7 @@ class SubClient(Client):
         response = self._session.get(
             url=f"{self.__endpoint}/s/feed/blog-disabled?"
             + f"start={start}&size={size}",
-            headers=self._parse_headers(),
+            headers=self.parse_headers(),
             proxies=getattr(self, "_Client__proxies", None),
             verify=getattr(self, "_Client__certificate_path", None),
         )
@@ -3523,7 +3532,7 @@ class SubClient(Client):
         response = self._session.get(
             url=f"{self.__endpoint}/s/user-profile?"
             + f"type=featured&start={start}&size={size}",
-            headers=self._parse_headers(),
+            headers=self.parse_headers(),
             proxies=getattr(self, "_Client__proxies", None),
             verify=getattr(self, "_Client__certificate_path", None),
         )
@@ -3535,7 +3544,7 @@ class SubClient(Client):
     def review_quiz_questions(self, quizId: str) -> QuizQuestionList:
         response = self._session.get(
             url=f"{self.__endpoint}/s/blog/{quizId}?action=review",
-            headers=self._parse_headers(),
+            headers=self.parse_headers(),
             proxies=getattr(self, "_Client__proxies", None),
             verify=getattr(self, "_Client__certificate_path", None),
         )
@@ -3550,7 +3559,7 @@ class SubClient(Client):
         response = self._session.get(
             url=f"{self.__endpoint}/s/blog?type=quizzes-recent"
             + f"&start={start}&size={size}",
-            headers=self._parse_headers(),
+            headers=self.parse_headers(),
             proxies=getattr(self, "_Client__proxies", None),
             verify=getattr(self, "_Client__certificate_path", None),
         )
@@ -3563,7 +3572,7 @@ class SubClient(Client):
         response = self._session.get(
             url=f"{self.__endpoint}/s/feed/quiz-trending"
             + f"?start={start}&size={size}",
-            headers=self._parse_headers(),
+            headers=self.parse_headers(),
             proxies=getattr(self, "_Client__proxies", None),
             verify=getattr(self, "_Client__certificate_path", None),
         )
@@ -3576,7 +3585,7 @@ class SubClient(Client):
         response = self._session.get(
             url=f"{self.__endpoint}/s/feed/quiz-best-quizzes"
             + f"?start={start}&size={size}",
-            headers=self._parse_headers(),
+            headers=self.parse_headers(),
             proxies=getattr(self, "_Client__proxies", None),
             verify=getattr(self, "_Client__certificate_path", None),
         )
@@ -3612,7 +3621,7 @@ class SubClient(Client):
         data = dumps(data)
         response = self._session.post(
             url=f"{self.__endpoint}/s/avatar-frame/apply",
-            headers=self._parse_headers(data=data),
+            headers=self.parse_headers(data=data),
             data=data,
             proxies=getattr(self, "_Client__proxies", None),
             verify=getattr(self, "_Client__certificate_path", None),
@@ -3641,7 +3650,7 @@ class SubClient(Client):
         response = self._session.post(
             url=f"{self.__endpoint}/s/chat/thread/{chatId}"
             + "/vvchat-presenter/invite/",
-            headers=self._parse_headers(data=data),
+            headers=self.parse_headers(data=data),
             data=data,
             proxies=getattr(self, "_Client__proxies", None),
             verify=getattr(self, "_Client__certificate_path", None),
@@ -3663,7 +3672,7 @@ class SubClient(Client):
 
         response = self._session.post(
             url=f"{self.__endpoint}/s/blog/{blogId}/poll/option",
-            headers=self._parse_headers(data=data),
+            headers=self.parse_headers(data=data),
             data=data,
             proxies=getattr(self, "_Client__proxies", None),
             verify=getattr(self, "_Client__certificate_path", None),
@@ -3689,7 +3698,7 @@ class SubClient(Client):
 
         response = self._session.post(
             url=f"{self.__endpoint}/s/item-category",
-            headers=self._parse_headers(data=data),
+            headers=self.parse_headers(data=data),
             data=data,
             proxies=getattr(self, "_Client__proxies", None),
             verify=getattr(self, "_Client__certificate_path", None),
@@ -3703,7 +3712,7 @@ class SubClient(Client):
         data = dumps({"title": title, "timestamp": int(timestamp() * 1000)})
         response = self._session.post(
             url=f"{self.__endpoint}/s/shared-folder/folders",
-            headers=self._parse_headers(data=data),
+            headers=self.parse_headers(data=data),
             data=data,
             proxies=getattr(self, "_Client__proxies", None),
             verify=getattr(self, "_Client__certificate_path", None),
@@ -3720,7 +3729,7 @@ class SubClient(Client):
 
         response = self._session.post(
             url=f"{self.__endpoint}/s/knowledge-base-request",
-            headers=self._parse_headers(data=data),
+            headers=self.parse_headers(data=data),
             data=data,
             proxies=getattr(self, "_Client__proxies", None),
             verify=getattr(self, "_Client__certificate_path", None),
@@ -3743,7 +3752,7 @@ class SubClient(Client):
 
         response = self._session.post(
             url=f"{self.__endpoint}/s/knowledge-base-request" + f"/{requestId}/approve",
-            headers=self._parse_headers(data=data),
+            headers=self.parse_headers(data=data),
             data=data,
             proxies=getattr(self, "_Client__proxies", None),
             verify=getattr(self, "_Client__certificate_path", None),
@@ -3758,7 +3767,7 @@ class SubClient(Client):
 
         response = self._session.post(
             url=f"{self.__endpoint}/s/knowledge-base-request" + f"/{requestId}/reject",
-            headers=self._parse_headers(data=data),
+            headers=self.parse_headers(data=data),
             data=data,
             proxies=getattr(self, "_Client__proxies", None),
             verify=getattr(self, "_Client__certificate_path", None),
@@ -3772,7 +3781,7 @@ class SubClient(Client):
         response = self._session.get(
             url=f"{self.__endpoint}/s/knowledge-base-request"
             + f"?type=all&start={start}&size={size}",
-            headers=self._parse_headers(),
+            headers=self.parse_headers(),
             proxies=getattr(self, "_Client__proxies", None),
             verify=getattr(self, "_Client__certificate_path", None),
         )
@@ -3786,7 +3795,7 @@ class SubClient(Client):
     def get_live_layer(self) -> LiveLayer:
         response = self._session.get(
             url=f"{self.__endpoint}/s/live-layer/homepage?v=2",
-            headers=self._parse_headers(),
+            headers=self.parse_headers(),
             proxies=getattr(self, "_Client__proxies", None),
             verify=getattr(self, "_Client__certificate_path", None),
         )
@@ -3809,7 +3818,7 @@ class SubClient(Client):
         data = dumps(data)
         response = self._session.post(
             url=f"{self.__endpoint}/s/chat/thread/apply-bubble",
-            headers=self._parse_headers(data=data),
+            headers=self.parse_headers(data=data),
             data=data,
             proxies=getattr(self, "_Client__proxies", None),
             verify=getattr(self, "_Client__certificate_path", None),
