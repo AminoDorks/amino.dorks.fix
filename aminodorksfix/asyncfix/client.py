@@ -113,6 +113,10 @@ class Client(Callbacks, SocketHandler):
             loop.run_until_complete(self._close_session())
     
     @property
+    def profile(self):
+        return self._profile
+    
+    @property
     def device_id(self):
         return self.__device_id
 
