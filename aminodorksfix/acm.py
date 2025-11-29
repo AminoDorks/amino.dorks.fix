@@ -60,7 +60,7 @@ class ACM(Client):
             raise CommunityNeeded()
         response = self._session.post(
             url=f"{API_URL}/g/s-x{self.comId}/community/delete-request",
-            headers=self._parse_headers(data=data),
+            headers=self.parse_headers(data=data),
             data=data
         )
         if response.status_code != 200:
@@ -75,7 +75,7 @@ class ACM(Client):
     ) -> CommunityList:
         response = self._session.get(
             url=f"{API_URL}/g/s/community/managed?start={start}&size={size}",
-            headers=self._parse_headers()
+            headers=self.parse_headers()
         )
         if response.status_code != 200:
             return CheckException(response.text)
@@ -90,7 +90,7 @@ class ACM(Client):
         response = self._session.get(
             url=f"{API_URL}/x{self.comId}/s/blog-category?" +
                 f"start={start}&size={size}",
-            headers=self._parse_headers()
+            headers=self.parse_headers()
         )
         if response.status_code != 200:
             return CheckException(response.text)
@@ -108,7 +108,7 @@ class ACM(Client):
             raise CommunityNeeded()
         response = self._session.post(
             url=f"{API_URL}/x{self.comId}/s/community/configuration",
-            headers=self._parse_headers(data=data),
+            headers=self.parse_headers(data=data),
             data=data
         )
         if response.status_code != 200:
@@ -127,7 +127,7 @@ class ACM(Client):
         response = self._session.post(
             url=f"{API_URL}/x{self.comId}/" +
             f"s/user-profile/{userId}/{rank}",
-            headers=self._parse_headers()
+            headers=self.parse_headers()
         )
         if response.status_code != 200:
             return CheckException(response.text)
@@ -141,7 +141,7 @@ class ACM(Client):
         response = self._session.get(
             url=f"{API_URL}/x{self.comId}/s/community/membership" +
             f"-request?status=pending&start={start}&size={size}",
-            headers=self._parse_headers()
+            headers=self.parse_headers()
         )
         if response.status_code != 200:
             return CheckException(response.text)
@@ -156,7 +156,7 @@ class ACM(Client):
         response = self._session.post(
             url=f"{API_URL}/x{self.comId}/s/community/membership-request" +
                 f"/{userId}/accept",
-            headers=self._parse_headers(data=data),
+            headers=self.parse_headers(data=data),
             data=data
         )
         if response.status_code != 200:
@@ -172,7 +172,7 @@ class ACM(Client):
         response = self._session.post(
             url=f"{API_URL}/x{self.comId}/s/community/membership-request" +
                 f"/{userId}/reject",
-                headers=self._parse_headers(data=data),
+                headers=self.parse_headers(data=data),
                 data=data
         )
         if response.status_code != 200:
@@ -186,7 +186,7 @@ class ACM(Client):
 
         response = self._session.get(
             url=f"{API_URL}/x{self.comId}/s/community/stats",
-            headers=self._parse_headers()
+            headers=self.parse_headers()
         )
         if response.status_code != 200:
             return CheckException(response.text)
@@ -207,7 +207,7 @@ class ACM(Client):
         response = self._session.get(
             url=f"{API_URL}/x{self.comId}/s/community/stats/moderation?" +
                 f"type={type.lower()}&start={start}&size={size}",
-                headers=self._parse_headers()
+                headers=self.parse_headers()
             )
         if response.status_code != 200:
             return CheckException(response.text)
@@ -234,7 +234,7 @@ class ACM(Client):
             raise CommunityNeeded()
         response = self._session.post(
             url=f"{API_URL}/x{self.comId}/s/community/configuration",
-            headers=self._parse_headers(data=data),
+            headers=self.parse_headers(data=data),
             data=data
         )
         if response.status_code != 200:
@@ -252,7 +252,7 @@ class ACM(Client):
             raise CommunityNeeded()
         response = self._session.post(
             url=f"{API_URL}/x{self.comId}/s/community/guideline",
-            headers=self._parse_headers(data=data),
+            headers=self.parse_headers(data=data),
             data=data
         )
         if response.status_code != 200:
@@ -288,7 +288,7 @@ class ACM(Client):
         response = self._session.post(
             f"{API_URL}/x{self.comId}/s/community/settings",
             data=dumped_data,
-            headers=self._parse_headers(data=dumped_data)
+            headers=self.parse_headers(data=dumped_data)
         )
         if response.status_code != 200:
             return CheckException(response.text)
@@ -306,7 +306,7 @@ class ACM(Client):
             raise CommunityNeeded()
         response = self._session.post(
             url=f"{API_URL}/x{self.comId}/s/community/configuration",
-            headers=self._parse_headers(data=data),
+            headers=self.parse_headers(data=data),
             data=data
         )
         if response.status_code != 200:
@@ -324,7 +324,7 @@ class ACM(Client):
             raise CommunityNeeded()
         response = self._session.post(
             url=f"{API_URL}/x{self.comId}/s/influencer/{userId}",
-            headers=self._parse_headers(data=data),
+            headers=self.parse_headers(data=data),
             data=data
         )
         if response.status_code != 200:
@@ -337,7 +337,7 @@ class ACM(Client):
             raise CommunityNeeded()
         response = self._session.delete(
             url=f"{API_URL}/x{self.comId}/s/influencer/{userId}",
-            headers=self._parse_headers()
+            headers=self.parse_headers()
         )
         if response.status_code != 200:
             return CheckException(response.text)
@@ -350,7 +350,7 @@ class ACM(Client):
         response = self._session.get(
             url=f"{API_URL}/x{self.comId}/s/notice?type=management" +
                 f"&status=1&start={start}&size={size}",
-            headers=self._parse_headers()
+            headers=self.parse_headers()
         )
         if response.status_code != 200:
             return CheckException(response.text)
@@ -362,7 +362,7 @@ class ACM(Client):
             raise CommunityNeeded()
         response = self._session.delete(
             url=f"{API_URL}/x{self.comId}/s/notice/{noticeId}",
-            headers=self._parse_headers()
+            headers=self.parse_headers()
         )
         if response.status_code != 200:
             return CheckException(response.text)

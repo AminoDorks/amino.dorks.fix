@@ -299,8 +299,8 @@ class Client(Callbacks, SocketHandler):
 
         self._profile: UserProfile = await self.get_user_info(sid_to_uid(SID))
         self._profile.api_key = self.__api_key
-        headers.sid = self.sid
-        headers.userId = self.userId
+        headers.sid = SID
+        headers.userId = self._profile.userId
         await self.__update_public_key()
 
     async def login(self, email: str, password: str):

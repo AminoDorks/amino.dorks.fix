@@ -148,7 +148,7 @@ class Client(Callbacks, SocketHandler):
     def parse_headers(
             self,
             data: str = None,
-            type: str = None
+            type: str = None,
     ) -> Dict[str, str]:
         """
         Generates the headers for a request.
@@ -162,7 +162,9 @@ class Client(Callbacks, SocketHandler):
         header = ApisHeaders(
             deviceId=self.__device_id,
             data=data,
-            type=type
+            type=type,
+            user_id=self._profile.userId,
+            session_id=self.__sid
         )
         header.generate_ecdsa_sync(self._dorks_session)
 
@@ -382,9 +384,8 @@ class Client(Callbacks, SocketHandler):
 
         self._profile = self.get_user_info(sid_to_uid(SID))
         self._profile.api_key = self.__api_key
-
-        self.__update_public_key()
         headers.sid = self.__sid
+        self.__update_public_key()
 
         if self._socket_enabled:
             self.run_amino_socket()
@@ -472,7 +473,7 @@ class Client(Callbacks, SocketHandler):
         self._profile.api_key = self.__api_key
 
         headers.sid = self.__sid
-        headers.userId = self._profile.userId
+        headers.device_id = self.__device_id
 
         self.__update_public_key()
         if self._socket_enabled:
@@ -522,7 +523,6 @@ class Client(Callbacks, SocketHandler):
         self._profile.api_key = self.__api_key
 
         headers.sid = self.__sid
-        headers.userId = self._profile.userId
 
         self.__update_public_key()
         if self._socket_enabled:
@@ -590,7 +590,6 @@ class Client(Callbacks, SocketHandler):
             return CheckException(response.text)
         self.__sid = None
         headers.sid = None
-        headers.userId = None
 
         if self._socket_enabled:
             self.close()

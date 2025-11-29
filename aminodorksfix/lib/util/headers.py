@@ -12,7 +12,6 @@ from aminodorksfix.lib.util import (
 
 sid = None
 device_id = None
-userId = None
 
 
 class ApisHeaders:
@@ -21,37 +20,39 @@ class ApisHeaders:
             deviceId: str,
             data: str | bytes = None,
             type: str = None,
-            sig: str = None
+            sig: str = None,
+            user_id: str = None,
+            session_id: str = None
     ):
-
+        self.__user_id = user_id
         headers = deepcopy(DEFAULT_HEADERS)
         headers["NDCDEVICEID"] = device_id or deviceId
         self.data = data
-        if sid:
-            headers["NDCAUTH"] = f"sid={sid}"
+        if session_id:
+            headers["NDCAUTH"] = f"sid={session_id}"
         if type:
             headers["Content-Type"] = type
         if sig:
             headers["NDC-MSG-SIG"] = sig
-        if userId:
-            headers["AUID"] = userId
+        if user_id:
+            headers["AUID"] = user_id
         if data:
             headers["Content-Length"] = str(len(data))
             headers["NDC-MSG-SIG"] = signature(data)
         self.headers = headers
 
     def generate_ecdsa_sync(self, session: Session):
-        if userId and isinstance(self.data, str):
+        if self.__user_id and isinstance(self.data, str):
             self.headers["NDC-MESSAGE-SIGNATURE"] = ecdsa_sync(
                 session,
                 self.data,
-                userId
+                self.__user_id
             )
 
     async def generate_ecdsa(self, session: ClientSession):
-        if userId and isinstance(self.data, str):
+        if self.__user_id and isinstance(self.data, str):
             self.headers["NDC-MESSAGE-SIGNATURE"] = await ecdsa(
                 session,
                 self.data,
-                userId
+                self.__user_id
             )
