@@ -1898,7 +1898,6 @@ class SubClient(Client):
                 "pinAnnouncement": pinAnnouncement,
                 "fansOnly": fansOnly,
             }
-        print(data)
 
         dumped_data = dumps(data)
 

@@ -15,7 +15,7 @@ with open("README.md", "r", encoding="utf-8") as stream:
 
 setup(
     name="amino.dorks.fix",
-    version="3.9.10.13",
+    version="3.9.10.14",
     author="misterio",
     author_email="misterio1234321@gmail.com",
     description="Library for Amino. Telegram - https://t.me/aminodorks",
