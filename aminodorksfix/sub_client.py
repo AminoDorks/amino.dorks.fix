@@ -6,9 +6,9 @@ from time import time as timestamp
 from time import timezone
 from typing import Any, BinaryIO, Dict, List, Unpack
 from uuid import UUID
-from requests import Session
 
 from json_minify import json_minify
+from requests import Session
 
 from .client import Client
 from .constants import (
@@ -20,9 +20,9 @@ from .constants import (
 from .lib.util import headers
 from .lib.util.enums import LeaderboardType
 from .lib.util.exceptions import CheckException, NoCommunity, SpecifyType, WrongType
+from .lib.util.headers import ApisHeaders
 from .lib.util.helpers import gen_deviceId
 from .lib.util.models import SubClientKwargs
-from .lib.util.headers import ApisHeaders
 from .lib.util.objects import (
     AdminLogList,
     BlogCategoryList,
@@ -79,7 +79,10 @@ class SubClient(Client):
     )
 
     def __init__(
-        self, comId: str = None, aminoId: str = None, **kwargs: Unpack[SubClientKwargs]
+        self,
+        comId: str | None = None,
+        aminoId: str | None = None,
+        **kwargs: Unpack[SubClientKwargs],
     ) -> None:
         """
         Initialize a SubClient object.
@@ -99,7 +102,7 @@ class SubClient(Client):
             self,
             api_key=kwargs.get("profile").api_key,
             deviceId=kwargs.get("device_id", gen_deviceId()),
-            proxies=kwargs.get("proxies"),
+            proxies=kwargs.get("proxies", {}),
             certificatePath=kwargs.get("certificate_path", False),
         )
 
@@ -115,19 +118,19 @@ class SubClient(Client):
         self.__cross_point = f"{API_URL}/g/s-x{self.__comId}"
         self.__profile = kwargs.get("profile")
         self.vc_connect = False
-    
+
     @property
     def profile(self) -> UserProfile:
         return self.__profile
-    
+
     @property
     def session(self) -> Session:
         return self.session
-    
+
     def parse_headers_sub(
-            self,
-            data: str = None,
-            type: str = None,
+        self,
+        data: str | None = None,
+        type: str | None = None,
     ) -> Dict[str, str]:
         """
         Generates the headers for a request.
@@ -143,7 +146,7 @@ class SubClient(Client):
             data=data,
             type=type,
             user_id=self.__profile.userId,
-            session_id=headers.sid
+            session_id=headers.sid,
         )
         header.generate_ecdsa_sync(self._dorks_session)
 
@@ -259,10 +262,10 @@ class SubClient(Client):
         content: str,
         imageList: List[BinaryIO] = [],
         captionList: List[str] = [],
-        categoriesList: list = None,
-        backgroundColor: str = None,
+        categoriesList: list | None = None,
+        backgroundColor: str | None = None,
         fansOnly: bool = False,
-        extensions: dict = None,
+        extensions: dict | None = None,
         crash: bool = False,
     ) -> int:
         """
@@ -326,10 +329,10 @@ class SubClient(Client):
         self,
         title: str,
         content: str,
-        icon: str = None,
+        icon: str | None = None,
         imageList: List[BinaryIO] = [],
-        keywords: str = None,
-        backgroundColor: str = None,
+        keywords: str | None = None,
+        backgroundColor: str | None = None,
         fansOnly: bool = False,
     ) -> int:
         """
@@ -387,11 +390,11 @@ class SubClient(Client):
     def edit_blog(
         self,
         blogId: str,
-        title: str = None,
-        content: str = None,
+        title: str | None = None,
+        content: str | None = None,
         imageList: List[BinaryIO] = [],
-        categoriesList: list = None,
-        backgroundColor: str = None,
+        categoriesList: list | None = None,
+        backgroundColor: str | None = None,
         fansOnly: bool = False,
     ) -> int:
         """
@@ -496,7 +499,10 @@ class SubClient(Client):
         return response.status_code
 
     def repost_blog(
-        self, content: str = None, blogId: str = None, wikiId: str = None
+        self,
+        content: str | None = None,
+        blogId: str | None = None,
+        wikiId: str | None = None,
     ) -> int:
         """
         Repost a Blog or a Wiki.
@@ -620,17 +626,17 @@ class SubClient(Client):
 
     def edit_profile(  # pyright: ignore[reportIncompatibleMethodOverride]
         self,
-        nickname: str = None,
-        content: str = None,
-        icon: BinaryIO = None,
-        chatRequestPrivilege: str = None,
+        nickname: str | None = None,
+        content: str | None = None,
+        icon: BinaryIO | None = None,
+        chatRequestPrivilege: str | None = None,
         imageList: List[BinaryIO] = [],
         captionList: List[str] = [],
-        backgroundImage: str = None,
-        backgroundColor: str = None,
-        titles: List[str] = None,
-        colors: List[str] = None,
-        defaultBubbleId: str = None,
+        backgroundImage: str | None = None,
+        backgroundColor: str | None = None,
+        titles: List[str] | None = None,
+        colors: List[str] | None = None,
+        defaultBubbleId: str | None = None,
     ) -> int:
         """
         Edit the Profile of the User.
@@ -731,10 +737,10 @@ class SubClient(Client):
     def comment(  # pyright: ignore[reportIncompatibleMethodOverride]
         self,
         message: str,
-        userId: str = None,
-        blogId: str = None,
-        wikiId: str = None,
-        replyTo: str = None,
+        userId: str | None = None,
+        blogId: str | None = None,
+        wikiId: str | None = None,
+        replyTo: str | None = None,
         isGuest: bool = False,
     ) -> None:
         data = {
@@ -793,7 +799,11 @@ class SubClient(Client):
                 return CheckException(response.text)
 
     def delete_comment(
-        self, commentId: str, userId: str = None, blogId: str = None, wikiId: str = None
+        self,
+        commentId: str,
+        userId: str | None = None,
+        blogId: str | None = None,
+        wikiId: str | None = None,
     ) -> None:
         if userId:
             response = self._session.delete(
@@ -824,7 +834,9 @@ class SubClient(Client):
             if response.status_code != 200:
                 return CheckException(response.text)
 
-    def like_blog(self, blogId: List[str] | str = None, wikiId: str = None) -> None:
+    def like_blog(
+        self, blogId: List[str] | str | None = None, wikiId: str | None = None
+    ) -> None:
         """
         Like a Blog, Multiple Blogs or a Wiki.
 
@@ -886,7 +898,7 @@ class SubClient(Client):
             if response.status_code != 200:
                 return CheckException(response.text)
 
-    def unlike_blog(self, blogId: str = None, wikiId: str = None) -> None:
+    def unlike_blog(self, blogId: str | None = None, wikiId: str | None = None) -> None:
         if blogId:
             response = self._session.delete(
                 url=f"{self.__endpoint}/s/blog/{blogId}"
@@ -909,7 +921,11 @@ class SubClient(Client):
                 return CheckException(response.text)
 
     def like_comment(
-        self, commentId: str, userId: str = None, blogId: str = None, wikiId: str = None
+        self,
+        commentId: str,
+        userId: str | None = None,
+        blogId: str | None = None,
+        wikiId: str | None = None,
     ) -> None:
         data: Dict[str, str | int] = {"value": 1, "timestamp": int(timestamp() * 1000)}
 
@@ -959,7 +975,11 @@ class SubClient(Client):
                 return CheckException(response.text)
 
     def unlike_comment(
-        self, commentId: str, userId: str = None, blogId: str = None, wikiId: str = None
+        self,
+        commentId: str,
+        userId: str | None = None,
+        blogId: str | None = None,
+        wikiId: str | None = None,
     ) -> None:
         if userId:
             response = self._session.delete(
@@ -1079,11 +1099,11 @@ class SubClient(Client):
 
     def send_active_obj(
         self,
-        startTime: int = None,
-        endTime: int = None,
+        startTime: int | None = None,
+        endTime: int | None = None,
         optInAdsFlags: int = 2147483647,
         timezone: int = -timezone // 1000,
-        timers: List[Dict[int, int]] = None,
+        timers: List[Dict[int, int]] | None = None,
         timestamp: int = int(timestamp() * 1000),
     ) -> int:
         data = {
@@ -1170,8 +1190,8 @@ class SubClient(Client):
         self,
         userId: List[str] | str,
         message: str,
-        title: str = None,
-        content: str = None
+        title: str | None = None,
+        content: str | None = None,
     ) -> Thread:
         """
         Start a chat with a user or list of users.
@@ -1269,7 +1289,11 @@ class SubClient(Client):
         return response.status_code
 
     def send_coins(
-        self, coins: int, blogId: str = None, chatId: str = None, objectId: str = None
+        self,
+        coins: int,
+        blogId: str | None = None,
+        chatId: str | None = None,
+        objectId: str | None = None,
     ) -> int:
         """
         Send coins to a Blog or Chat.
@@ -1474,19 +1498,19 @@ class SubClient(Client):
     def send_message(
         self,
         chatId: str,
-        message: str = None,
+        message: str | None = None,
         messageType: int = 0,
-        file: BinaryIO = None,
-        fileType: str = None,
-        replyTo: str = None,
+        file: BinaryIO | None = None,
+        fileType: str | None = None,
+        replyTo: str | None = None,
         mentionUserIds: List[str] = [],
-        stickerId: str = None,
-        embedId: str = None,
-        embedType: int = None,
-        embedLink: str = None,
-        embedTitle: str = None,
-        embedContent: str = None,
-        embedImage: BinaryIO = None,
+        stickerId: str | None = None,
+        embedId: str | None = None,
+        embedType: int | None = None,
+        embedLink: str | None = None,
+        embedTitle: str | None = None,
+        embedContent: str | None = None,
+        embedImage: BinaryIO | None = None,
     ) -> int:
         """
         Send a Message to a Chat.
@@ -1613,7 +1637,11 @@ class SubClient(Client):
         return response.status_code
 
     def delete_message(
-        self, chatId: str, messageId: str, asStaff: bool = False, reason: str = None
+        self,
+        chatId: str,
+        messageId: str,
+        asStaff: bool = False,
+        reason: str | None = None,
     ) -> int:
         """
         Delete a Message from a Chat.
@@ -1695,20 +1723,20 @@ class SubClient(Client):
     def edit_chat(
         self,
         chatId: str,
-        doNotDisturb: bool = None,
-        pinChat: bool = None,
-        title: str = None,
-        icon: str = None,
-        backgroundImage: str = None,
-        content: str = None,
-        announcement: str = None,
-        coHosts: list = None,
-        keywords: List[str] = None,
-        pinAnnouncement: bool = None,
-        canTip: bool = None,
-        viewOnly: bool = None,
-        canInvite: bool = None,
-        fansOnly: bool = None,
+        doNotDisturb: bool | None = None,
+        pinChat: bool | None = None,
+        title: str | None = None,
+        icon: str | None = None,
+        backgroundImage: str | None = None,
+        content: str | None = None,
+        announcement: str | None = None,
+        coHosts: list | None = None,
+        keywords: List[str] | None = None,
+        pinAnnouncement: bool | None = None,
+        canTip: bool | None = None,
+        viewOnly: bool | None = None,
+        canInvite: bool | None = None,
+        fansOnly: bool | None = None,
     ) -> List[int]:
         """
         Send a Message to a Chat.
@@ -1828,7 +1856,9 @@ class SubClient(Client):
             response = self._session.post(
                 url=f"{self.__endpoint}/s/chat/"
                 + f"thread/{chatId}/members-can-invite/disable",
-                headers=self.parse_headers_sub(type="application/x-www-form-urlencoded"),
+                headers=self.parse_headers_sub(
+                    type="application/x-www-form-urlencoded"
+                ),
                 proxies=getattr(self, "_Client__proxies"),
                 verify=getattr(self, "_Client__certificate_path", None),
             )
@@ -1841,7 +1871,9 @@ class SubClient(Client):
             response = self._session.post(
                 url=f"{self.__endpoint}/s/chat/thread/"
                 + f"{chatId}/tipping-perm-status/enable",
-                headers=self.parse_headers_sub(type="application/x-www-form-urlencoded"),
+                headers=self.parse_headers_sub(
+                    type="application/x-www-form-urlencoded"
+                ),
                 proxies=getattr(self, "_Client__proxies"),
                 verify=getattr(self, "_Client__certificate_path", None),
             )
@@ -1861,11 +1893,12 @@ class SubClient(Client):
         if keywords:
             data["keywords"] = keywords
         if announcement:
-            data["extensions"] = {"announcement": announcement}
-        if pinAnnouncement:
-            data["extensions"] = {"pinAnnouncement": pinAnnouncement}
-        if fansOnly:
-            data["extensions"] = {"fansOnly": fansOnly}
+            data["extensions"] = {
+                "announcement": announcement,
+                "pinAnnouncement": pinAnnouncement,
+                "fansOnly": fansOnly,
+            }
+        print(data)
 
         dumped_data = dumps(data)
 
@@ -2507,10 +2540,10 @@ class SubClient(Client):
 
     def get_tipped_users(
         self,
-        blogId: str = None,
-        wikiId: str = None,
-        quizId: str = None,
-        chatId: str = None,
+        blogId: str | None = None,
+        wikiId: str | None = None,
+        quizId: str | None = None,
+        chatId: str | None = None,
         start: int = 0,
         size: int = 25,
     ) -> TippedUsersSummary:
@@ -2628,7 +2661,7 @@ class SubClient(Client):
         return Thread(loads(response.text)["thread"]).Thread
 
     def get_chat_messages(
-        self, chatId: str, size: int = 25, pageToken: str = None
+        self, chatId: str, size: int = 25, pageToken: str | None = None
     ) -> MessageList:
         """
         List of Messages from an Chat.
@@ -2694,10 +2727,10 @@ class SubClient(Client):
 
     def get_blog_info(
         self,
-        blogId: str = None,
-        wikiId: str = None,
-        quizId: str = None,
-        fileId: str = None,
+        blogId: str | None = None,
+        wikiId: str | None = None,
+        quizId: str | None = None,
+        fileId: str | None = None,
     ) -> SharedFolderFile | GetBlogInfo | GetWikiInfo:
         if blogId or quizId:
             if quizId:
@@ -2738,10 +2771,10 @@ class SubClient(Client):
 
     def get_blog_comments(
         self,
-        blogId: str = None,
-        wikiId: str = None,
-        quizId: str = None,
-        fileId: str = None,
+        blogId: str | None = None,
+        wikiId: str | None = None,
+        quizId: str | None = None,
+        fileId: str | None = None,
         sorting: str = "newest",
         start: int = 0,
         size: int = 25,
@@ -2864,7 +2897,7 @@ class SubClient(Client):
         return CommentList(loads(response.text)["commentList"]).CommentList
 
     def get_recent_blogs(
-        self, pageToken: str = None, start: int = 0, size: int = 25
+        self, pageToken: str | None = None, start: int = 0, size: int = 25
     ) -> BlogList:
         if pageToken:
             url = (
@@ -3026,11 +3059,11 @@ class SubClient(Client):
 
     def moderation_history(
         self,
-        userId: str = None,
-        blogId: str = None,
-        wikiId: str = None,
-        quizId: str = None,
-        fileId: str = None,
+        userId: str | None = None,
+        blogId: str | None = None,
+        wikiId: str | None = None,
+        quizId: str | None = None,
+        fileId: str | None = None,
         size: int = 25,
     ) -> AdminLogList:
         if userId:
@@ -3089,10 +3122,10 @@ class SubClient(Client):
     def feature(
         self,
         time: int,
-        userId: str = None,
-        chatId: str = None,
-        blogId: str = None,
-        wikiId: str = None,
+        userId: str | None = None,
+        chatId: str | None = None,
+        blogId: str | None = None,
+        wikiId: str | None = None,
     ) -> Dict[str, Any]:
         chosen_time = (
             FEATURE_CHAT_TIME_MAP.get(time, 3600)
@@ -3158,10 +3191,10 @@ class SubClient(Client):
 
     def unfeature(
         self,
-        userId: str = None,
-        chatId: str = None,
-        blogId: str = None,
-        wikiId: str = None,
+        userId: str | None = None,
+        chatId: str | None = None,
+        blogId: str | None = None,
+        wikiId: str | None = None,
     ) -> Dict[str, Any]:
         data = dumps(
             {
@@ -3216,13 +3249,13 @@ class SubClient(Client):
 
     def hide(
         self,
-        userId: str = None,
-        chatId: str = None,
-        blogId: str = None,
-        wikiId: str = None,
-        quizId: str = None,
-        fileId: str = None,
-        reason: str = None,
+        userId: str | None = None,
+        chatId: str | None = None,
+        blogId: str | None = None,
+        wikiId: str | None = None,
+        quizId: str | None = None,
+        fileId: str | None = None,
+        reason: str | None = None,
     ) -> Dict[str, Any]:
         data = {
             "adminOpNote": {"content": reason},
@@ -3309,13 +3342,13 @@ class SubClient(Client):
 
     def unhide(
         self,
-        userId: str = None,
-        chatId: str = None,
-        blogId: str = None,
-        wikiId: str = None,
-        quizId: str = None,
-        fileId: str = None,
-        reason: str = None,
+        userId: str | None = None,
+        chatId: str | None = None,
+        blogId: str | None = None,
+        wikiId: str | None = None,
+        quizId: str | None = None,
+        fileId: str | None = None,
+        reason: str | None = None,
     ) -> Dict[str, Any]:
         data = {
             "adminOpNote": {"content": reason},
@@ -3428,7 +3461,7 @@ class SubClient(Client):
 
         return loads(response.text)
 
-    def warn(self, userId: str, reason: str = None) -> Dict[str, Any]:
+    def warn(self, userId: str, reason: str | None = None) -> Dict[str, Any]:
         data = dumps(
             {
                 "uid": userId,
@@ -3455,7 +3488,11 @@ class SubClient(Client):
         return loads(response.text)
 
     def strike(
-        self, userId: str, hours: int, title: str = None, reason: str = None
+        self,
+        userId: str,
+        hours: int,
+        title: str | None = None,
+        reason: str | None = None,
     ) -> Dict[str, Any]:
         data = dumps(
             {
@@ -3483,7 +3520,9 @@ class SubClient(Client):
 
         return loads(response.text)
 
-    def ban(self, userId: str, reason: str, banType: int = None) -> Dict[str, Any]:
+    def ban(
+        self, userId: str, reason: str, banType: int | None = None
+    ) -> Dict[str, Any]:
         data = dumps(
             {
                 "reasonType": banType,
@@ -3706,7 +3745,7 @@ class SubClient(Client):
         return response.status_code
 
     def create_wiki_category(
-        self, title: str, parentCategoryId: str, content: str = None
+        self, title: str, parentCategoryId: str, content: str | None = None
     ) -> int:
         data = dumps(
             {
