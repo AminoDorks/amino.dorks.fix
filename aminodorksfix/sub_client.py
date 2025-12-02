@@ -1836,21 +1836,17 @@ class SubClient(Client):
             else:
                 res.append(response.status_code)
 
-        if viewOnly:
-            if viewOnly:
-                response = self._session.post(
-                    url=f"{self.__endpoint}/s/chat/"
-                    + f"thread/{chatId}/view-only/enable",
-                    headers=self.parse_headers_sub(
-                        type="application/x-www-form-urlencoded"
-                    ),
-                    proxies=getattr(self, "_Client__proxies"),
-                    verify=getattr(self, "_Client__certificate_path", None),
-                )
-                if response.status_code != 200:
-                    res.append(CheckException(response.text))
-                else:
-                    res.append(response.status_code)
+        response = self._session.post(
+            url=f"{self.__endpoint}/s/chat/"
+            + f"thread/{chatId}/view-only/{'enable' if viewOnly else 'disable'}",
+            headers=self.parse_headers_sub(type="application/x-www-form-urlencoded"),
+            proxies=getattr(self, "_Client__proxies"),
+            verify=getattr(self, "_Client__certificate_path", None),
+        )
+        if response.status_code != 200:
+            res.append(CheckException(response.text))
+        else:
+            res.append(response.status_code)
 
         if not canInvite:
             response = self._session.post(
@@ -1892,6 +1888,11 @@ class SubClient(Client):
             data["icon"] = icon
         if keywords:
             data["keywords"] = keywords
+        if not pinAnnouncement:
+            data["extensions"] = {
+                "pinAnnouncement": False,
+                "fansOnly": fansOnly,
+            }
         if announcement:
             data["extensions"] = {
                 "announcement": announcement,
